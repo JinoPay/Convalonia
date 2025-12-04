@@ -45,18 +45,15 @@ public partial class WorkspaceListViewModel : ViewModelBase
     [RelayCommand]
     private async Task CreateWorkspaceAsync()
     {
-        if (string.IsNullOrWhiteSpace(NewWorkspaceName))
-        {
-            _toastService.ShowWarning("Please enter a workspace name");
-            return;
-        }
-
         IsCreatingWorkspace = true;
 
         try
         {
+            // Pass name to service (can be empty - service will generate random name)
+            var workspaceName = string.IsNullOrWhiteSpace(NewWorkspaceName) ? null : NewWorkspaceName;
+
             var workspace = await _workspaceService.CreateWorkspaceAsync(
-                NewWorkspaceName,
+                workspaceName,
                 string.IsNullOrWhiteSpace(GitRepositoryUrl) ? null : GitRepositoryUrl
             );
 

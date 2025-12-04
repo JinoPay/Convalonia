@@ -22,6 +22,7 @@ public partial class ChatViewModel : ViewModelBase
     private readonly IToastService _toastService;
     private readonly string _workspacePath;
     private CancellationTokenSource? _cancellationTokenSource;
+    private bool _isFirstMessage = true;
 
     [ObservableProperty]
     private ObservableCollection<Message> _messages;
@@ -46,6 +47,12 @@ public partial class ChatViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _showTerminal = true;
+
+    /// <summary>
+    /// Event raised when the first user message is sent
+    /// Used to trigger workspace auto-renaming
+    /// </summary>
+    public event EventHandler<string>? FirstMessageSent;
 
     public ChatViewModel(
         Agent agent,
@@ -106,6 +113,13 @@ public partial class ChatViewModel : ViewModelBase
             _messages.Add(userMessage);
             var userInput = InputMessage;
             InputMessage = string.Empty;
+
+            // Trigger first message event for workspace auto-renaming
+            if (_isFirstMessage)
+            {
+                _isFirstMessage = false;
+                FirstMessageSent?.Invoke(this, userInput);
+            }
 
             // Update agent status
             _agent.Status = AgentStatus.Thinking;

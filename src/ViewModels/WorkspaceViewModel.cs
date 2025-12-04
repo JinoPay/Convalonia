@@ -59,14 +59,27 @@ public partial class WorkspaceViewModel : ViewModelBase
 
     partial void OnSelectedAgentChanged(Agent? value)
     {
+        // Unsubscribe from previous chat view model
+        if (SelectedAgentChatViewModel != null)
+        {
+            SelectedAgentChatViewModel.FirstMessageSent -= OnFirstMessageSent;
+        }
+
         if (value != null && _workspace != null)
         {
-            SelectedAgentChatViewModel = new ChatViewModel(value, _workspace.Path, _toastService);
+            var chatViewModel = new ChatViewModel(value, _workspace.Path, _toastService);
+            chatViewModel.FirstMessageSent += OnFirstMessageSent;
+            SelectedAgentChatViewModel = chatViewModel;
         }
         else
         {
             SelectedAgentChatViewModel = null;
         }
+    }
+
+    private async void OnFirstMessageSent(object? sender, string firstMessage)
+    {
+        await TryAutoRenameWorkspaceAsync(firstMessage);
     }
 
     [RelayCommand]
@@ -169,5 +182,33 @@ public partial class WorkspaceViewModel : ViewModelBase
         }
 
         await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Attempts to auto-rename workspace based on first user message
+    /// </summary>
+    public async Task TryAutoRenameWorkspaceAsync(string firstUserMessage)
+    {
+        if (_workspace == null)
+            return;
+
+        // Suggest a name based on the message
+        var suggestedName = WorkspaceNameSuggestionService.SuggestName(firstUserMessage);
+
+        if (suggestedName == null)
+            return;
+
+        // Check if we should rename (only if current name is random)
+        if (!WorkspaceNameSuggestionService.ShouldRename(_workspace.Name, suggestedName))
+            return;
+
+        // Attempt to rename
+        var success = await _workspaceService.RenameWorkspaceAsync(_workspace.Id, suggestedName);
+
+        if (success)
+        {
+            WorkspaceName = suggestedName;
+            _toastService.ShowInfo($"Workspace renamed to '{suggestedName}'");
+        }
     }
 }
