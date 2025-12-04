@@ -13,79 +13,120 @@
         <vm:HomeViewModel />
     </Design.DataContext>
 
-    <StackPanel Spacing="20" Margin="40" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <!-- Title -->
-        <TextBlock Text="{Binding Title}"
-                   FontSize="32"
-                   FontWeight="Bold"
-                   HorizontalAlignment="Center" />
-
-        <!-- Welcome Message -->
-        <TextBlock Text="{Binding WelcomeMessage}"
-                   FontSize="18"
-                   TextWrapping="Wrap"
-                   TextAlignment="Center"
-                   MaxWidth="600" />
-
-        <!-- Divider -->
-        <Separator Margin="0,20" />
-
-        <!-- Counter Display -->
-        <Border BorderBrush="{DynamicResource SystemAccentColor}"
-                BorderThickness="2"
-                CornerRadius="8"
-                Padding="30">
+    <ScrollViewer>
+        <StackPanel Spacing="30" Margin="40">
+            <!-- Header -->
             <StackPanel Spacing="10">
-                <TextBlock Text="Counter Demo"
-                           FontSize="20"
-                           FontWeight="SemiBold"
-                           HorizontalAlignment="Center" />
-
-                <TextBlock Text="{Binding Counter}"
-                           FontSize="48"
+                <TextBlock Text="Convalonia"
+                           FontSize="36"
                            FontWeight="Bold"
-                           HorizontalAlignment="Center"
-                           Foreground="{DynamicResource SystemAccentColor}" />
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Multi-Agent Parallel Workspace for Claude"
+                           FontSize="16"
+                           Opacity="0.7"
+                           HorizontalAlignment="Center" />
             </StackPanel>
-        </Border>
 
-        <!-- Buttons -->
-        <StackPanel Spacing="10" Orientation="Vertical">
-            <Button Content="Increment Counter"
-                    Command="{Binding IncrementCounterCommand}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Padding="20,10" />
+            <!-- Stats Overview -->
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="20">
+                <!-- Total Workspaces -->
+                <Border Grid.Column="0"
+                        Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemAccentColor}"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding TotalWorkspaces}"
+                                   FontSize="32"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource SystemAccentColor}" />
+                        <TextBlock Text="Workspaces"
+                                   FontSize="14"
+                                   HorizontalAlignment="Center"
+                                   Opacity="0.8" />
+                    </StackPanel>
+                </Border>
 
-            <Button Content="Show Info"
-                    Command="{Binding ShowInfoCommand}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Padding="20,10" />
+                <!-- Total Agents -->
+                <Border Grid.Column="1"
+                        Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemAccentColor}"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding TotalAgents}"
+                                   FontSize="32"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource SystemAccentColor}" />
+                        <TextBlock Text="Active Agents"
+                                   FontSize="14"
+                                   HorizontalAlignment="Center"
+                                   Opacity="0.8" />
+                    </StackPanel>
+                </Border>
 
-            <Button Content="Reset Counter"
-                    Command="{Binding ResetCounterCommand}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Padding="20,10" />
+                <!-- Active Tasks -->
+                <Border Grid.Column="2"
+                        Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemAccentColor}"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding ActiveTasks}"
+                                   FontSize="32"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource SystemAccentColor}" />
+                        <TextBlock Text="Active Tasks"
+                                   FontSize="14"
+                                   HorizontalAlignment="Center"
+                                   Opacity="0.8" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Quick Actions -->
+            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="Quick Actions"
+                               FontSize="18"
+                               FontWeight="SemiBold" />
+
+                    <Button Content="Create New Workspace"
+                            Command="{Binding CreateWorkspaceCommand}"
+                            HorizontalAlignment="Stretch"
+                            Padding="15,10" />
+
+                    <Button Content="View All Workspaces"
+                            Command="{Binding ViewWorkspacesCommand}"
+                            HorizontalAlignment="Stretch"
+                            Padding="15,10" />
+                </StackPanel>
+            </Border>
+
+            <!-- Features Overview -->
+            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    Padding="20"
+                    CornerRadius="8">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Key Features"
+                               FontWeight="SemiBold"
+                               FontSize="18" />
+                    <TextBlock Text="✓ Multiple workspaces with independent environments" TextWrapping="Wrap" />
+                    <TextBlock Text="✓ Parallel Claude agent execution" TextWrapping="Wrap" />
+                    <TextBlock Text="✓ Real-time terminal output monitoring" TextWrapping="Wrap" />
+                    <TextBlock Text="✓ Integrated GitHub operations (clone, branch, commit, push)" TextWrapping="Wrap" />
+                    <TextBlock Text="✓ File system management" TextWrapping="Wrap" />
+                    <TextBlock Text="✓ Claude Code CLI integration" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
         </StackPanel>
-
-        <!-- Framework Info -->
-        <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                Padding="20"
-                CornerRadius="8"
-                Margin="0,20,0,0">
-            <StackPanel Spacing="8">
-                <TextBlock Text="Framework Features:"
-                           FontWeight="SemiBold"
-                           FontSize="16" />
-                <TextBlock Text="✓ View-First Navigation with Region Manager" TextWrapping="Wrap" />
-                <TextBlock Text="✓ Dialog Service with Strong Typing" TextWrapping="Wrap" />
-                <TextBlock Text="✓ Toast Notifications" TextWrapping="Wrap" />
-                <TextBlock Text="✓ Event Aggregation" TextWrapping="Wrap" />
-                <TextBlock Text="✓ Dependency Injection" TextWrapping="Wrap" />
-                <TextBlock Text="✓ MVVM Pattern with CommunityToolkit" TextWrapping="Wrap" />
-            </StackPanel>
-        </Border>
-    </StackPanel>
+    </ScrollViewer>
 </UserControl>

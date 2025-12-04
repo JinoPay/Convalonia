@@ -16,7 +16,7 @@ namespace Convalonia.ViewModels;
 /// </summary>
 public partial class WorkspaceViewModel : ViewModelBase
 {
-    private readonly Workspace _workspace;
+    private Workspace? _workspace;
     private readonly WorkspaceService _workspaceService;
     private readonly IToastService _toastService;
 
@@ -38,6 +38,9 @@ public partial class WorkspaceViewModel : ViewModelBase
     [ObservableProperty]
     private WorkspaceStatus _status;
 
+    [ObservableProperty]
+    private ChatViewModel? _selectedAgentChatViewModel;
+
     public WorkspaceViewModel(
         Workspace workspace,
         WorkspaceService workspaceService,
@@ -54,9 +57,24 @@ public partial class WorkspaceViewModel : ViewModelBase
         _status = workspace.Status;
     }
 
+    partial void OnSelectedAgentChanged(Agent? value)
+    {
+        if (value != null && _workspace != null)
+        {
+            SelectedAgentChatViewModel = new ChatViewModel(value, _workspace.Path, _toastService);
+        }
+        else
+        {
+            SelectedAgentChatViewModel = null;
+        }
+    }
+
     [RelayCommand]
     private async Task CreateAgentAsync()
     {
+        if (_workspace == null)
+            return;
+
         try
         {
             var agent = new Agent
