@@ -15,6 +15,12 @@ public class WorkspaceService
     private readonly ObservableCollection<Workspace> _workspaces = new();
     private readonly string _baseWorkspacePath;
 
+    public WorkspaceService() : this(Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        "ConvaloniaWorkspaces"))
+    {
+    }
+
     public WorkspaceService(string baseWorkspacePath)
     {
         _baseWorkspacePath = baseWorkspacePath;

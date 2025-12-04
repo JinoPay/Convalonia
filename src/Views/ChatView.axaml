@@ -101,7 +101,7 @@
             BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
             BorderThickness="0,1,0,0"
             Padding="15">
-      <Grid ColumnDefinitions="*,Auto" ColumnGap="10">
+      <Grid ColumnDefinitions="*,Auto">
         <TextBox Grid.Column="0"
                  Text="{Binding InputMessage}"
                  Watermark="Type your message here..."
@@ -116,6 +116,7 @@
                 Command="{Binding SendMessageCommand}"
                 IsEnabled="{Binding !IsSending}"
                 VerticalAlignment="Bottom"
+                Margin="10,0,0,0"
                 Width="80"
                 Height="40"/>
       </Grid>
