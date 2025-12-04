@@ -1,6 +1,8 @@
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Convalonia.Services;
 using Jinobald.Core.Services.Toast;
 using Jinobald.Core.Mvvm;
 
@@ -9,38 +11,47 @@ namespace Convalonia.ViewModels;
 public partial class HomeViewModel : ViewModelBase
 {
     private readonly IToastService _toastService;
+    private readonly WorkspaceService _workspaceService;
 
     [ObservableProperty]
-    private string _title = "Jinobald Framework Demo";
+    private int _totalWorkspaces = 0;
 
     [ObservableProperty]
-    private string _welcomeMessage = "Welcome to Medan App using Jinobald Framework!";
+    private int _totalAgents = 0;
 
     [ObservableProperty]
-    private int _counter = 0;
+    private int _activeTasks = 0;
 
-    public HomeViewModel(IToastService toastService)
+    public HomeViewModel(
+        IToastService toastService,
+        WorkspaceService workspaceService)
     {
         _toastService = toastService;
+        _workspaceService = workspaceService;
+
+        UpdateStats();
     }
 
     [RelayCommand]
-    private void IncrementCounter()
+    private async Task CreateWorkspaceAsync()
     {
-        Counter++;
-        _toastService.ShowSuccess($"Counter increased to {Counter}!");
+        _toastService.ShowInfo("Please use the Workspaces view to create new workspaces");
+        await Task.CompletedTask;
     }
 
     [RelayCommand]
-    private void ShowInfo()
+    private async Task ViewWorkspacesAsync()
     {
-        _toastService.ShowInfo("This is a demo application using Jinobald MVVM Framework", duration: 3);
+        _toastService.ShowInfo("Please navigate to Workspaces view");
+        await Task.CompletedTask;
     }
 
-    [RelayCommand]
-    private void ResetCounter()
+    private void UpdateStats()
     {
-        Counter = 0;
-        _toastService.ShowWarning("Counter has been reset");
+        TotalWorkspaces = _workspaceService.Workspaces.Count;
+        TotalAgents = _workspaceService.Workspaces.Sum(w => w.Agents.Count);
+        ActiveTasks = _workspaceService.Workspaces
+            .SelectMany(w => w.Agents)
+            .Count(a => a.Status == Models.AgentStatus.Thinking || a.Status == Models.AgentStatus.UsingTool);
     }
 }

@@ -33,7 +33,9 @@ public partial class WorkspaceListViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isCreatingWorkspace = false;
 
-    public WorkspaceListViewModel(WorkspaceService workspaceService, IToastService toastService)
+    public WorkspaceListViewModel(
+        WorkspaceService workspaceService,
+        IToastService toastService)
     {
         _workspaceService = workspaceService;
         _toastService = toastService;
@@ -99,10 +101,16 @@ public partial class WorkspaceListViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void SelectWorkspace(Workspace workspace)
+    private async Task SelectWorkspaceAsync(Workspace workspace)
     {
         SelectedWorkspace = workspace;
         _workspaceService.UpdateLastAccessed(workspace.Id);
+
+        // TODO: Implement navigation to WorkspaceView
+        // For now, just show a toast
+        _toastService.ShowInfo($"Selected workspace: {workspace.Name}");
+
+        await Task.CompletedTask;
     }
 
     [RelayCommand]

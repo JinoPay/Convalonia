@@ -215,11 +215,12 @@ public partial class ChatViewModel : ViewModelBase
         }
     }
 
-    public void Dispose()
+    public new void Dispose()
     {
         _claudeCodeService.OutputReceived -= OnOutputReceived;
         _claudeCodeService.ErrorReceived -= OnErrorReceived;
         _claudeCodeService.Dispose();
+        base.Dispose();
     }
 
     private void UpdateStatusText()
