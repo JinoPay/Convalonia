@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Convalonia.Models;
+using Convalonia.Utils;
 
 namespace Convalonia.Services;
 
@@ -35,15 +36,20 @@ public class WorkspaceService
     public ObservableCollection<Workspace> Workspaces => _workspaces;
 
     /// <summary>
-    /// Creates a new workspace
+    /// Creates a new workspace with an optional name (generates random name if not provided)
     /// </summary>
-    public async Task<Workspace> CreateWorkspaceAsync(string name, string? gitRemote = null)
+    public async Task<Workspace> CreateWorkspaceAsync(string? name = null, string? gitRemote = null)
     {
+        // Generate random name if not provided
+        var workspaceName = string.IsNullOrWhiteSpace(name)
+            ? RandomNameGenerator.GenerateUnique(_workspaces.Select(w => w.Name))
+            : name;
+
         var workspace = new Workspace
         {
             Id = Guid.NewGuid(),
-            Name = name,
-            Path = Path.Combine(_baseWorkspacePath, SanitizeName(name)),
+            Name = workspaceName,
+            Path = Path.Combine(_baseWorkspacePath, SanitizeName(workspaceName)),
             GitRemote = gitRemote,
             CreatedAt = DateTime.Now,
             LastAccessedAt = DateTime.Now,
@@ -96,6 +102,48 @@ public class WorkspaceService
         {
             workspace.LastAccessedAt = DateTime.Now;
         }
+    }
+
+    /// <summary>
+    /// Renames a workspace and updates its directory path
+    /// </summary>
+    public async Task<bool> RenameWorkspaceAsync(Guid workspaceId, string newName)
+    {
+        var workspace = GetWorkspace(workspaceId);
+        if (workspace == null)
+            return false;
+
+        if (string.IsNullOrWhiteSpace(newName))
+            return false;
+
+        // Check if name already exists
+        if (_workspaces.Any(w => w.Id != workspaceId &&
+            string.Equals(w.Name, newName, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        var oldPath = workspace.Path;
+        var newPath = Path.Combine(_baseWorkspacePath, SanitizeName(newName));
+
+        // Rename directory if it exists
+        if (Directory.Exists(oldPath) && oldPath != newPath)
+        {
+            try
+            {
+                Directory.Move(oldPath, newPath);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // Update workspace properties
+        workspace.Name = newName;
+        workspace.Path = newPath;
+
+        return await Task.FromResult(true);
     }
 
     private static string SanitizeName(string name)
