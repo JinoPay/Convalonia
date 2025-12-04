@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Convalonia.ViewModels"
+             xmlns:models="using:Convalonia.Models"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
@@ -39,8 +40,7 @@
                         BorderThickness="1"
                         CornerRadius="6"
                         Padding="10"
-                        Margin="0,0,0,8"
-                        Background="{Binding IsSelected, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        Margin="0,0,0,8">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="3">
                       <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
@@ -74,19 +74,24 @@
 
     <!-- Agent Chat Area -->
     <Border Grid.Column="1" Padding="20">
-      <ContentControl Content="{Binding SelectedAgent}">
-        <ContentControl.ContentTemplate>
-          <DataTemplate>
-            <!-- Chat interface will be shown here -->
-            <TextBlock Text="Select an agent to start chatting"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       FontSize="16"
-                       Opacity="0.5"
-                       IsVisible="{Binding !SelectedAgent}"/>
-          </DataTemplate>
-        </ContentControl.ContentTemplate>
-      </ContentControl>
+      <Grid>
+        <TextBlock Text="Select an agent to start chatting"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="16"
+                   Opacity="0.5"
+                   IsVisible="{Binding !SelectedAgent}"/>
+
+        <ContentControl Content="{Binding SelectedAgent}"
+                        IsVisible="{Binding SelectedAgent, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <ContentControl.ContentTemplate>
+            <DataTemplate DataType="models:Agent">
+              <!-- Chat interface will be shown here -->
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
+      </Grid>
     </Border>
   </Grid>
 </UserControl>

@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using Avalonia.Markup.Xaml;
 using Jinobald.Avalonia.Application;
 using Jinobald.Core.Ioc;
@@ -19,14 +17,7 @@ public partial class App : ApplicationBase<MainWindow>
     public override void RegisterTypes(IContainerRegistry containerRegistry)
     {
         // Register Services
-        var baseWorkspacePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            "ConvaloniaWorkspaces"
-        );
-
-        containerRegistry.RegisterSingleton<WorkspaceService>(() =>
-            new WorkspaceService(baseWorkspacePath));
-
+        containerRegistry.RegisterSingleton<WorkspaceService>();
         containerRegistry.RegisterSingleton<GitHubService>();
         containerRegistry.RegisterSingleton<FileSystemService>();
 

@@ -5,7 +5,7 @@ namespace Convalonia.Models;
 /// <summary>
 /// Represents a task being executed by an agent
 /// </summary>
-public class Task
+public class AgentTask
 {
     public Guid Id { get; set; }
     public Guid AgentId { get; set; }
