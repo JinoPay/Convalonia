@@ -27,5 +27,25 @@
 
   <ItemGroup>
     <None Remove=".gitignore" />
+    <None Remove="app.manifest" />
+    <None Remove="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="src\Views\ChatView.axaml" />
+    <AdditionalFiles Include="src\Views\HomeView.axaml" />
+    <AdditionalFiles Include="src\Views\WorkspaceListView.axaml" />
+    <AdditionalFiles Include="src\Views\WorkspaceView.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="src\App.axaml.cs">
+      <DependentUpon>App.axaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="src\MainWindow.axaml.cs">
+      <DependentUpon>MainWindow.axaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 </Project>
