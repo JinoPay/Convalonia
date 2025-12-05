@@ -27,6 +27,12 @@ public partial class WorkspaceViewModel : ViewModelBase
     private Agent? _selectedAgent;
 
     [ObservableProperty]
+    private ObservableCollection<Repository> _repositories;
+
+    [ObservableProperty]
+    private Repository? _selectedRepository;
+
+    [ObservableProperty]
     private string _workspaceName;
 
     [ObservableProperty]
@@ -51,6 +57,7 @@ public partial class WorkspaceViewModel : ViewModelBase
         _toastService = toastService;
 
         _agents = workspace.Agents;
+        _repositories = workspace.Repositories;
         _workspaceName = workspace.Name;
         _workspacePath = workspace.Path;
         _currentBranch = workspace.GitBranch;
@@ -173,6 +180,87 @@ public partial class WorkspaceViewModel : ViewModelBase
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
                 FileName = _workspacePath,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowError($"Failed to open folder: {ex.Message}");
+        }
+
+        await Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private async Task AddRepositoryAsync()
+    {
+        if (_workspace == null)
+            return;
+
+        try
+        {
+            // This will open the AddRepositoryDialog
+            // For now, just show a toast
+            _toastService.ShowInfo("Add repository dialog will be shown here");
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowError($"Failed to add repository: {ex.Message}");
+        }
+
+        await Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private async Task RemoveRepositoryAsync(Repository repository)
+    {
+        if (_workspace == null || repository == null)
+            return;
+
+        try
+        {
+            await _workspaceService.RepositoryService.RemoveRepositoryAsync(_workspace, repository.Id);
+            _toastService.ShowSuccess($"Repository '{repository.Name}' removed");
+
+            if (SelectedRepository?.Id == repository.Id)
+            {
+                SelectedRepository = _repositories.FirstOrDefault();
+            }
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowError($"Failed to remove repository: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task RefreshRepositoryStatusAsync(Repository repository)
+    {
+        if (repository == null)
+            return;
+
+        try
+        {
+            await _workspaceService.RepositoryService.UpdateRepositoryStatusAsync(repository);
+            _toastService.ShowInfo($"Repository '{repository.Name}' status updated");
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowError($"Failed to refresh repository: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenRepositoryFolderAsync(Repository repository)
+    {
+        if (repository == null)
+            return;
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = repository.WorkspacePath,
                 UseShellExecute = true
             });
         }

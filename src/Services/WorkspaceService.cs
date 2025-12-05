@@ -16,6 +16,7 @@ public class WorkspaceService
     private readonly ObservableCollection<Workspace> _workspaces = new();
     private readonly string _baseWorkspacePath;
     private readonly GitHubService _gitHubService;
+    private readonly RepositoryService _repositoryService;
 
     public WorkspaceService() : this(
         Path.Combine(
@@ -29,6 +30,7 @@ public class WorkspaceService
     {
         _baseWorkspacePath = baseWorkspacePath;
         _gitHubService = gitHubService;
+        _repositoryService = new RepositoryService(gitHubService);
 
         // Create base workspace directory if it doesn't exist
         if (!Directory.Exists(_baseWorkspacePath))
@@ -38,6 +40,7 @@ public class WorkspaceService
     }
 
     public ObservableCollection<Workspace> Workspaces => _workspaces;
+    public RepositoryService RepositoryService => _repositoryService;
 
     /// <summary>
     /// Creates a new workspace with an optional name (generates random name if not provided)
