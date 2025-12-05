@@ -1,0 +1,140 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:Convalonia.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="600"
+        x:Class="Convalonia.Views.BranchSelectorDialog"
+        x:DataType="vm:BranchSelectorViewModel"
+        Title="Branch Selector"
+        Width="500"
+        Height="600"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="20" RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                   Text="Select or Create Branch"
+                   FontSize="20"
+                   FontWeight="Bold"
+                   Margin="0,0,0,20"/>
+
+        <!-- Search and Options -->
+        <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,15">
+            <TextBlock Text="Search Branches:" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding SearchQuery}"
+                     Watermark="Type to search branches..."
+                     IsEnabled="{Binding !IsLoading}"/>
+
+            <CheckBox Content="Include archived branches"
+                      IsChecked="{Binding IncludeArchived}"
+                      IsEnabled="{Binding !IsLoading}"
+                      Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- Current Branch Info -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="12"
+                CornerRadius="8"
+                Margin="0,0,0,15">
+            <StackPanel Spacing="5">
+                <TextBlock Text="Current Selection:" FontWeight="SemiBold" FontSize="12"/>
+                <TextBlock Text="{Binding SelectedBranch, StringFormat='Branch: {0}'}"
+                           FontSize="14"
+                           IsVisible="{Binding SelectedBranch, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <TextBlock Text="No branch selected"
+                           FontSize="14"
+                           Opacity="0.6"
+                           IsVisible="{Binding SelectedBranch, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Branch List -->
+        <Border Grid.Row="3"
+                BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="5">
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Grid.Row="0"
+                           Text="Available Branches:"
+                           FontWeight="SemiBold"
+                           Margin="10,5"/>
+
+                <ScrollViewer Grid.Row="1">
+                    <ItemsControl ItemsSource="{Binding FilteredBranches}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="10,8">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding}"
+                                                   VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1"
+                                                Content="Select"
+                                                Command="{Binding $parent[ItemsControl].((vm:BranchSelectorViewModel)DataContext).CheckoutBranchCommand}"
+                                                CommandParameter="{Binding}"
+                                                Padding="12,4"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Loading Indicator -->
+                <Border Grid.Row="1"
+                        Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        IsVisible="{Binding IsLoading}">
+                    <TextBlock Text="Loading branches..."
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="14"
+                               Opacity="0.7"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Create New Branch -->
+        <Border Grid.Row="4"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="15"
+                CornerRadius="8"
+                Margin="0,15,0,0">
+            <StackPanel Spacing="10">
+                <TextBlock Text="Create New Branch" FontWeight="SemiBold"/>
+                <TextBlock Text="Create a new branch from the selected branch or base branch."
+                           FontSize="11"
+                           Opacity="0.7"
+                           TextWrapping="Wrap"/>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBox Grid.Column="0"
+                             Name="NewBranchNameTextBox"
+                             Watermark="New branch name..."
+                             IsEnabled="{Binding !IsLoading}"/>
+                    <Button Grid.Column="1"
+                            Content="Create"
+                            Command="{Binding CreateNewBranchCommand}"
+                            CommandParameter="{Binding #NewBranchNameTextBox.Text}"
+                            IsEnabled="{Binding !IsLoading}"
+                            Margin="10,0,0,0"
+                            Padding="15,8"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Footer Buttons -->
+        <Grid Grid.Row="5" ColumnDefinitions="*,Auto" Margin="0,20,0,0">
+            <Button Grid.Column="1"
+                    Content="Close"
+                    Click="OnCloseClick"
+                    IsEnabled="{Binding !IsLoading}"
+                    Padding="20,8"/>
+        </Grid>
+    </Grid>
+</Window>

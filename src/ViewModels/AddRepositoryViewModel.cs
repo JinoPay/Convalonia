@@ -1,0 +1,136 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Avalonia.Platform.Storage;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Convalonia.Models;
+using Convalonia.Services;
+using Jinobald.Core.Mvvm;
+using Jinobald.Core.Services.Toast;
+
+namespace Convalonia.ViewModels;
+
+/// <summary>
+/// ViewModel for adding a repository to a workspace
+/// </summary>
+public partial class AddRepositoryViewModel : ViewModelBase
+{
+    private readonly Workspace _workspace;
+    private readonly RepositoryService _repositoryService;
+    private readonly IToastService _toastService;
+
+    [ObservableProperty]
+    private string _selectedMethod = "OpenProject"; // OpenProject, CloneFromUrl, QuickStart
+
+    [ObservableProperty]
+    private string _localProjectPath = string.Empty;
+
+    [ObservableProperty]
+    private string _gitUrl = string.Empty;
+
+    [ObservableProperty]
+    private string _branchName = string.Empty;
+
+    [ObservableProperty]
+    private bool _searchArchivedBranches = false;
+
+    [ObservableProperty]
+    private bool _isProcessing = false;
+
+    public AddRepositoryViewModel(
+        Workspace workspace,
+        RepositoryService repositoryService,
+        IToastService toastService)
+    {
+        _workspace = workspace;
+        _repositoryService = repositoryService;
+        _toastService = toastService;
+    }
+
+    [RelayCommand]
+    private async Task BrowseProjectAsync()
+    {
+        // This will be implemented with Avalonia file picker
+        // For now, users can manually enter the path
+        await Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private async Task AddRepositoryAsync()
+    {
+        IsProcessing = true;
+
+        try
+        {
+            Repository? repository = null;
+
+            switch (SelectedMethod)
+            {
+                case "OpenProject":
+                    if (string.IsNullOrWhiteSpace(LocalProjectPath))
+                    {
+                        _toastService.ShowError("Please specify a local project path");
+                        return;
+                    }
+
+                    if (!Directory.Exists(LocalProjectPath))
+                    {
+                        _toastService.ShowError("The specified path does not exist");
+                        return;
+                    }
+
+                    repository = await _repositoryService.AddLocalRepositoryAsync(_workspace, LocalProjectPath);
+                    break;
+
+                case "CloneFromUrl":
+                    if (string.IsNullOrWhiteSpace(GitUrl))
+                    {
+                        _toastService.ShowError("Please specify a git repository URL");
+                        return;
+                    }
+
+                    repository = await _repositoryService.AddRepositoryFromUrlAsync(
+                        _workspace,
+                        GitUrl,
+                        string.IsNullOrWhiteSpace(BranchName) ? null : BranchName);
+                    break;
+
+                case "QuickStart":
+                    // Quick start creates an empty repository
+                    _toastService.ShowInfo("Quick start not yet implemented");
+                    return;
+
+                default:
+                    _toastService.ShowError("Unknown method selected");
+                    return;
+            }
+
+            if (repository != null)
+            {
+                repository.SearchArchivedBranches = SearchArchivedBranches;
+                _toastService.ShowSuccess($"Repository '{repository.Name}' added successfully!");
+
+                // Reset form
+                LocalProjectPath = string.Empty;
+                GitUrl = string.Empty;
+                BranchName = string.Empty;
+                SearchArchivedBranches = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowError($"Failed to add repository: {ex.Message}");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    [RelayCommand]
+    private void SelectMethod(string method)
+    {
+        SelectedMethod = method;
+    }
+}

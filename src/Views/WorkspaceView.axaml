@@ -14,7 +14,7 @@
             BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
             BorderThickness="0,0,1,0"
             Padding="15">
-      <Grid RowDefinitions="Auto,Auto,*,Auto">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
         <!-- Workspace Info -->
         <StackPanel Grid.Row="0" Spacing="5" Margin="0,0,0,20">
           <TextBlock Text="{Binding WorkspaceName}" FontSize="18" FontWeight="Bold"/>
@@ -24,15 +24,81 @@
                      IsVisible="{Binding CurrentBranch, Converter={x:Static ObjectConverters.IsNotNull}}"/>
         </StackPanel>
 
+        <!-- Repositories Section -->
+        <StackPanel Grid.Row="1" Spacing="8" Margin="0,0,0,20">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="Repositories" FontWeight="SemiBold" FontSize="14"/>
+            <Button Grid.Column="1"
+                    Content="+"
+                    Width="24"
+                    Height="24"
+                    FontSize="16"
+                    Command="{Binding AddRepositoryCommand}"
+                    ToolTip.Tip="Add Repository"/>
+          </Grid>
+
+          <ItemsControl ItemsSource="{Binding Repositories}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="8"
+                        Margin="0,0,0,6"
+                        Background="{DynamicResource SystemControlBackgroundAltMediumBrush}">
+                  <Grid RowDefinitions="Auto,Auto,Auto">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding Name}"
+                                 FontWeight="SemiBold"
+                                 FontSize="12"/>
+                      <Button Grid.Column="1"
+                              Content="×"
+                              FontSize="12"
+                              Width="20"
+                              Height="20"
+                              Command="{Binding $parent[ItemsControl].((vm:WorkspaceViewModel)DataContext).RemoveRepositoryCommand}"
+                              CommandParameter="{Binding}"/>
+                    </Grid>
+
+                    <TextBlock Grid.Row="1"
+                               Text="{Binding CurrentBranch, StringFormat='Branch: {0}'}"
+                               FontSize="10"
+                               Opacity="0.7"
+                               Margin="0,3,0,0"/>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                      <Button Content="📁"
+                              Width="24"
+                              Height="24"
+                              FontSize="10"
+                              Command="{Binding $parent[ItemsControl].((vm:WorkspaceViewModel)DataContext).OpenRepositoryFolderCommand}"
+                              CommandParameter="{Binding}"
+                              ToolTip.Tip="Open Folder"/>
+                      <Button Content="🔄"
+                              Width="24"
+                              Height="24"
+                              FontSize="10"
+                              Command="{Binding $parent[ItemsControl].((vm:WorkspaceViewModel)DataContext).RefreshRepositoryStatusCommand}"
+                              CommandParameter="{Binding}"
+                              ToolTip.Tip="Refresh Status"/>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
         <!-- Create Agent Button -->
-        <Button Grid.Row="1"
+        <Button Grid.Row="2"
                 Content="+ New Agent"
                 Command="{Binding CreateAgentCommand}"
                 HorizontalAlignment="Stretch"
                 Margin="0,0,0,15"/>
 
         <!-- Agents List -->
-        <ScrollViewer Grid.Row="2">
+        <ScrollViewer Grid.Row="3">
           <ItemsControl ItemsSource="{Binding Agents}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
@@ -61,7 +127,7 @@
         </ScrollViewer>
 
         <!-- Workspace Actions -->
-        <StackPanel Grid.Row="3" Spacing="8" Margin="0,15,0,0">
+        <StackPanel Grid.Row="5" Spacing="8" Margin="0,15,0,0">
           <Button Content="Open Folder"
                   Command="{Binding OpenWorkspaceFolderCommand}"
                   HorizontalAlignment="Stretch"/>

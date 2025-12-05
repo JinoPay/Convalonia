@@ -44,14 +44,38 @@ public class GitHubService
     /// <summary>
     /// Creates a new branch in the repository
     /// </summary>
-    public async Task<bool> CreateBranchAsync(string workspacePath, string branchName)
+    public async Task<bool> CreateBranchAsync(string workspacePath, string branchName, string? baseBranch = null)
     {
         try
         {
+            // If base branch is provided, ensure we're starting from it
+            if (!string.IsNullOrWhiteSpace(baseBranch))
+            {
+                // Fetch latest changes first
+                await ExecuteGitCommandAsync(workspacePath, "fetch --all");
+
+                // Check if base branch exists locally or remotely
+                var branchExists = await ExecuteGitCommandAsync(workspacePath, $"rev-parse --verify {baseBranch}");
+                if (!branchExists)
+                {
+                    // Try remote branch
+                    branchExists = await ExecuteGitCommandAsync(workspacePath, $"rev-parse --verify origin/{baseBranch}");
+                    if (branchExists)
+                    {
+                        // Checkout remote branch first
+                        await ExecuteGitCommandAsync(workspacePath, $"checkout -b {baseBranch} origin/{baseBranch}");
+                    }
+                }
+            }
+
+            var arguments = string.IsNullOrWhiteSpace(baseBranch)
+                ? $"checkout -b {branchName}"
+                : $"checkout -b {branchName} {baseBranch}";
+
             var processInfo = new ProcessStartInfo
             {
                 FileName = "git",
-                Arguments = $"checkout -b {branchName}",
+                Arguments = arguments,
                 WorkingDirectory = workspacePath,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -319,6 +343,217 @@ public class GitHubService
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to copy repository: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Checks out a specific branch
+    /// </summary>
+    public async Task<bool> CheckoutBranchAsync(string workspacePath, string branchName)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"checkout {branchName}",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return false;
+
+            await process.WaitForExitAsync();
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to checkout branch: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets all branches in the repository
+    /// </summary>
+    public async Task<string[]> GetBranchesAsync(string workspacePath, bool includeArchived = false)
+    {
+        try
+        {
+            // Get local and remote branches
+            var arguments = includeArchived ? "branch -a" : "branch";
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return Array.Empty<string>();
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+                return Array.Empty<string>();
+
+            // Parse branch output
+            var branches = output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(b => b.Trim().TrimStart('*').Trim())
+                .Where(b => !string.IsNullOrWhiteSpace(b))
+                .ToArray();
+
+            return branches;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to get branches: {ex.Message}");
+            return Array.Empty<string>();
+        }
+    }
+
+    /// <summary>
+    /// Gets the remote origin URL
+    /// </summary>
+    public async Task<string?> GetRemoteOriginAsync(string workspacePath)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "remote get-url origin",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return null;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0 ? output.Trim() : null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to get remote origin: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Checks if repository has uncommitted changes
+    /// </summary>
+    public async Task<bool> HasUncommittedChangesAsync(string workspacePath)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "status --porcelain",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return false;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to check for uncommitted changes: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets the last commit hash
+    /// </summary>
+    public async Task<string?> GetLastCommitHashAsync(string workspacePath)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "rev-parse HEAD",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return null;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0 ? output.Trim() : null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to get last commit hash: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Helper method to execute git commands
+    /// </summary>
+    private async Task<bool> ExecuteGitCommandAsync(string workspacePath, string arguments)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return false;
+
+            await process.WaitForExitAsync();
+            return process.ExitCode == 0;
+        }
+        catch
+        {
             return false;
         }
     }
