@@ -90,24 +90,52 @@
                 </Border>
             </Grid>
 
+            <!-- Quick Start Guide -->
+            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    CornerRadius="8"
+                    Padding="20"
+                    BorderBrush="{DynamicResource SystemAccentColor}"
+                    BorderThickness="2">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="🚀 빠른 시작 가이드"
+                               FontSize="18"
+                               FontWeight="SemiBold" />
+
+                    <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.9">
+                        <Run Text="1. 'Workspaces' 탭으로 이동하거나 아래 버튼 클릭"/><LineBreak/>
+                        <Run Text="2. 워크스페이스 생성 (빈 상태 또는 GitHub 레포)"/><LineBreak/>
+                        <Run Text="3. 워크스페이스 내에서 Claude 에이전트 실행"/><LineBreak/>
+                        <Run Text="4. 여러 에이전트를 병렬로 작업시키기"/>
+                    </TextBlock>
+
+                    <Button Content="✨ Create New Workspace"
+                            Command="{Binding CreateWorkspaceCommand}"
+                            HorizontalAlignment="Stretch"
+                            Padding="15,10"
+                            FontSize="14"
+                            FontWeight="SemiBold" />
+
+                    <Button Content="📂 View All Workspaces"
+                            Command="{Binding ViewWorkspacesCommand}"
+                            HorizontalAlignment="Stretch"
+                            Padding="15,10"
+                            FontSize="14" />
+                </StackPanel>
+            </Border>
+
             <!-- Quick Actions -->
             <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                     CornerRadius="8"
                     Padding="20">
-                <StackPanel Spacing="15">
-                    <TextBlock Text="Quick Actions"
-                               FontSize="18"
+                <StackPanel Spacing="12">
+                    <TextBlock Text="💡 팁"
+                               FontSize="16"
                                FontWeight="SemiBold" />
-
-                    <Button Content="Create New Workspace"
-                            Command="{Binding CreateWorkspaceCommand}"
-                            HorizontalAlignment="Stretch"
-                            Padding="15,10" />
-
-                    <Button Content="View All Workspaces"
-                            Command="{Binding ViewWorkspacesCommand}"
-                            HorizontalAlignment="Stretch"
-                            Padding="15,10" />
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.8">
+                        <Run Text="• 워크스페이스 생성 시 Git URL 비우면 현재 디렉토리를 자동 감지"/><LineBreak/>
+                        <Run Text="• 각 워크스페이스는 독립적인 환경과 Git 상태 유지"/><LineBreak/>
+                        <Run Text="• 여러 에이전트를 동시에 실행하여 병렬 작업 가능"/>
+                    </TextBlock>
                 </StackPanel>
             </Border>
 

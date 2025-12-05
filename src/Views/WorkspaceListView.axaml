@@ -21,27 +21,47 @@
         <StackPanel Spacing="10">
           <TextBlock Text="Create New Workspace" FontSize="16" FontWeight="SemiBold"/>
 
+          <!-- Instructions -->
+          <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                  CornerRadius="4"
+                  Padding="10"
+                  Margin="0,5,0,10">
+            <StackPanel Spacing="5">
+              <TextBlock Text="💡 사용 방법:" FontSize="13" FontWeight="SemiBold"/>
+              <TextBlock Text="1️⃣ 빈 워크스페이스: 모든 필드를 비워두고 'Create' 클릭"
+                         FontSize="12" TextWrapping="Wrap"/>
+              <TextBlock Text="2️⃣ GitHub에서 클론: Git URL 입력 후 'Create' 클릭 (예: https://github.com/user/repo.git)"
+                         FontSize="12" TextWrapping="Wrap"/>
+              <TextBlock Text="3️⃣ 로컬 git 레포: Git URL을 비워두면 현재 디렉토리를 자동 감지"
+                         FontSize="12" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+
+          <TextBlock Text="워크스페이스 이름 (선택사항):" FontSize="12" FontWeight="SemiBold"/>
           <TextBox Text="{Binding NewWorkspaceName}"
-                   Watermark="Workspace name (leave empty for random name)"
-                   Width="400"
+                   Watermark="비워두면 랜덤 이름이 자동 생성됩니다 (예: purple-mountain)"
+                   Width="500"
                    HorizontalAlignment="Left"/>
 
-          <TextBlock Text="Git repository URL (optional):" FontSize="12" Opacity="0.8" Margin="0,5,0,0"/>
-          <TextBlock Text="Leave empty to use current directory if it's a git repo"
-                     FontSize="11"
-                     Opacity="0.6"
-                     Margin="0,0,0,5"/>
-
+          <TextBlock Text="Git 레포지토리 URL (선택사항):" FontSize="12" FontWeight="SemiBold" Margin="0,10,0,0"/>
           <TextBox Text="{Binding GitRepositoryUrl}"
-                   Watermark="e.g., https://github.com/user/repo.git"
-                   Width="400"
+                   Watermark="예: https://github.com/anthropics/claude-code.git (비워두면 현재 디렉토리 사용)"
+                   Width="500"
                    HorizontalAlignment="Left"/>
 
-          <Button Content="Create Workspace"
+          <Button Content="✨ Create Workspace"
                   Command="{Binding CreateWorkspaceCommand}"
                   IsEnabled="{Binding !IsCreatingWorkspace}"
                   HorizontalAlignment="Left"
-                  Margin="0,10,0,0"/>
+                  Margin="0,15,0,0"
+                  Padding="20,8"
+                  FontSize="14"
+                  FontWeight="SemiBold"/>
+
+          <TextBlock Text="{Binding IsCreatingWorkspace, Converter={x:Static StringConverters.IsNotNullOrEmpty}, ConverterParameter='⏳ 워크스페이스 생성 중...'}"
+                     FontSize="12"
+                     Opacity="0.7"
+                     IsVisible="{Binding IsCreatingWorkspace}"/>
         </StackPanel>
       </Border>
     </StackPanel>
