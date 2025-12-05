@@ -15,16 +15,20 @@ public class WorkspaceService
 {
     private readonly ObservableCollection<Workspace> _workspaces = new();
     private readonly string _baseWorkspacePath;
+    private readonly GitHubService _gitHubService;
 
-    public WorkspaceService() : this(Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "ConvaloniaWorkspaces"))
+    public WorkspaceService() : this(
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".ConvaloniaWorkspaces"),
+        new GitHubService())
     {
     }
 
-    public WorkspaceService(string baseWorkspacePath)
+    public WorkspaceService(string baseWorkspacePath, GitHubService gitHubService)
     {
         _baseWorkspacePath = baseWorkspacePath;
+        _gitHubService = gitHubService;
 
         // Create base workspace directory if it doesn't exist
         if (!Directory.Exists(_baseWorkspacePath))
@@ -38,30 +42,85 @@ public class WorkspaceService
     /// <summary>
     /// Creates a new workspace with an optional name (generates random name if not provided)
     /// </summary>
-    public async Task<Workspace> CreateWorkspaceAsync(string? name = null, string? gitRemote = null)
+    /// <param name="name">Optional workspace name</param>
+    /// <param name="gitRemote">Optional git remote URL</param>
+    /// <param name="sourceRepoPath">Optional path to local git repository to copy from</param>
+    public async Task<Workspace> CreateWorkspaceAsync(string? name = null, string? gitRemote = null, string? sourceRepoPath = null)
     {
         // Generate random name if not provided
         var workspaceName = string.IsNullOrWhiteSpace(name)
             ? RandomNameGenerator.GenerateUnique(_workspaces.Select(w => w.Name))
             : name;
 
+        var workspacePath = Path.Combine(_baseWorkspacePath, SanitizeName(workspaceName));
+
         var workspace = new Workspace
         {
             Id = Guid.NewGuid(),
             Name = workspaceName,
-            Path = Path.Combine(_baseWorkspacePath, SanitizeName(workspaceName)),
+            Path = workspacePath,
             GitRemote = gitRemote,
             CreatedAt = DateTime.Now,
             LastAccessedAt = DateTime.Now,
             Status = WorkspaceStatus.Idle
         };
 
-        // Create workspace directory
-        Directory.CreateDirectory(workspace.Path);
+        // Initialize git repository
+        bool gitInitialized = false;
+
+        // Priority: Git remote URL > Local repo detection
+        if (!string.IsNullOrWhiteSpace(gitRemote))
+        {
+            // Git remote URL is provided, clone it
+            Directory.CreateDirectory(workspacePath);
+            gitInitialized = await _gitHubService.CloneRepositoryAsync(gitRemote, workspacePath);
+
+            if (gitInitialized)
+            {
+                // Create a new branch for this workspace
+                var branchName = GitHubService.GenerateBranchName(workspaceName);
+                var branchCreated = await _gitHubService.CreateBranchAsync(workspacePath, branchName);
+
+                if (branchCreated)
+                {
+                    workspace.GitBranch = branchName;
+                }
+            }
+        }
+        // No git remote URL, check if source repo path is a git repository
+        else if (!string.IsNullOrWhiteSpace(sourceRepoPath) && await _gitHubService.IsGitRepositoryAsync(sourceRepoPath))
+        {
+            // Get the root of the source repository
+            var repoRoot = await _gitHubService.GetRepositoryRootAsync(sourceRepoPath);
+            if (repoRoot != null)
+            {
+                // Copy the repository to workspace directory
+                gitInitialized = await _gitHubService.CopyRepositoryAsync(repoRoot, workspacePath);
+
+                if (gitInitialized)
+                {
+                    // Create a new branch for this workspace
+                    var branchName = GitHubService.GenerateBranchName(workspaceName);
+                    var branchCreated = await _gitHubService.CreateBranchAsync(workspacePath, branchName);
+
+                    if (branchCreated)
+                    {
+                        workspace.GitBranch = branchName;
+                        workspace.GitRemote = repoRoot; // Store the source repo path
+                    }
+                }
+            }
+        }
+
+        // If no git initialization happened, just create an empty directory
+        if (!gitInitialized)
+        {
+            Directory.CreateDirectory(workspacePath);
+        }
 
         _workspaces.Add(workspace);
 
-        return await Task.FromResult(workspace);
+        return workspace;
     }
 
     /// <summary>
