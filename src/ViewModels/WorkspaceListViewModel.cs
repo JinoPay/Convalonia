@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -52,12 +53,21 @@ public partial class WorkspaceListViewModel : ViewModelBase
             // Pass name to service (can be empty - service will generate random name)
             var workspaceName = string.IsNullOrWhiteSpace(NewWorkspaceName) ? null : NewWorkspaceName;
 
+            // Auto-detect current directory as source repo
+            var currentDirectory = Directory.GetCurrentDirectory();
+
             var workspace = await _workspaceService.CreateWorkspaceAsync(
                 workspaceName,
-                string.IsNullOrWhiteSpace(GitRepositoryUrl) ? null : GitRepositoryUrl
+                string.IsNullOrWhiteSpace(GitRepositoryUrl) ? null : GitRepositoryUrl,
+                currentDirectory  // Always pass current directory, service will check if it's a git repo
             );
 
-            _toastService.ShowSuccess($"Workspace '{workspace.Name}' created successfully!");
+            // Show success message with git branch info if available
+            var message = string.IsNullOrWhiteSpace(workspace.GitBranch)
+                ? $"Workspace '{workspace.Name}' created successfully!"
+                : $"Workspace '{workspace.Name}' created with branch '{workspace.GitBranch}'!";
+
+            _toastService.ShowSuccess(message);
 
             // Reset form
             NewWorkspaceName = string.Empty;

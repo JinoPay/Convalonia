@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Convalonia.Services;
@@ -190,5 +191,169 @@ public class GitHubService
             Console.WriteLine($"Failed to push changes: {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Checks if a directory is a git repository
+    /// </summary>
+    public async Task<bool> IsGitRepositoryAsync(string path)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "rev-parse --git-dir",
+                WorkingDirectory = path,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return false;
+
+            await process.WaitForExitAsync();
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to check git repository: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Initializes a git repository in the specified directory
+    /// </summary>
+    public async Task<bool> InitRepositoryAsync(string workspacePath)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "init",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return false;
+
+            await process.WaitForExitAsync();
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to initialize repository: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets the root directory of the git repository
+    /// </summary>
+    public async Task<string?> GetRepositoryRootAsync(string path)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "rev-parse --show-toplevel",
+                WorkingDirectory = path,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return null;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0 ? output.Trim() : null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to get repository root: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Copies a local git repository to a new location while preserving git history
+    /// </summary>
+    public async Task<bool> CopyRepositoryAsync(string sourceRepoPath, string targetPath)
+    {
+        try
+        {
+            // Clone the local repository (preserves all git history and branches)
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"clone \"{sourceRepoPath}\" \"{targetPath}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return false;
+
+            await process.WaitForExitAsync();
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to copy repository: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Generates a sanitized branch name from workspace name
+    /// </summary>
+    public static string GenerateBranchName(string workspaceName)
+    {
+        // Convert to lowercase and replace spaces/special chars with hyphens
+        var branchName = workspaceName
+            .ToLowerInvariant()
+            .Replace(" ", "-")
+            .Replace("_", "-");
+
+        // Remove any characters that aren't alphanumeric or hyphens
+        branchName = new string(branchName
+            .Where(c => char.IsLetterOrDigit(c) || c == '-')
+            .ToArray());
+
+        // Remove consecutive hyphens
+        while (branchName.Contains("--"))
+        {
+            branchName = branchName.Replace("--", "-");
+        }
+
+        // Trim hyphens from start and end
+        branchName = branchName.Trim('-');
+
+        // If empty after sanitization, use a default
+        if (string.IsNullOrEmpty(branchName))
+        {
+            branchName = "workspace";
+        }
+
+        return branchName;
     }
 }
