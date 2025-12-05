@@ -14,29 +14,29 @@ namespace Convalonia.ViewModels;
 /// <summary>
 /// ViewModel for a single workspace with multiple agents
 /// </summary>
-public partial class WorkspaceViewModel : ViewModelBase
+public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
 {
     private Workspace? _workspace;
     private readonly WorkspaceService _workspaceService;
     private readonly IToastService _toastService;
 
     [ObservableProperty]
-    private ObservableCollection<Agent> _agents;
+    private ObservableCollection<Agent> _agents = new();
 
     [ObservableProperty]
     private Agent? _selectedAgent;
 
     [ObservableProperty]
-    private ObservableCollection<Repository> _repositories;
+    private ObservableCollection<Repository> _repositories = new();
 
     [ObservableProperty]
     private Repository? _selectedRepository;
 
     [ObservableProperty]
-    private string _workspaceName;
+    private string _workspaceName = string.Empty;
 
     [ObservableProperty]
-    private string _workspacePath;
+    private string _workspacePath = string.Empty;
 
     [ObservableProperty]
     private string? _currentBranch;
@@ -48,20 +48,56 @@ public partial class WorkspaceViewModel : ViewModelBase
     private ChatViewModel? _selectedAgentChatViewModel;
 
     public WorkspaceViewModel(
-        Workspace workspace,
         WorkspaceService workspaceService,
         IToastService toastService)
     {
-        _workspace = workspace;
         _workspaceService = workspaceService;
         _toastService = toastService;
+    }
 
-        _agents = workspace.Agents;
-        _repositories = workspace.Repositories;
-        _workspaceName = workspace.Name;
-        _workspacePath = workspace.Path;
-        _currentBranch = workspace.GitBranch;
-        _status = workspace.Status;
+    public async Task OnNavigatedToAsync(NavigationContext context)
+    {
+        // Get workspace ID from navigation parameter
+        if (context.Parameter is Guid workspaceId)
+        {
+            LoadWorkspace(workspaceId);
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public Task<bool> OnNavigatingToAsync(NavigationContext context)
+    {
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> OnNavigatingFromAsync(NavigationContext context)
+    {
+        return Task.FromResult(true);
+    }
+
+    public Task OnNavigatedFromAsync(NavigationContext context)
+    {
+        return Task.CompletedTask;
+    }
+
+    private void LoadWorkspace(Guid workspaceId)
+    {
+        _workspace = _workspaceService.Workspaces.FirstOrDefault(w => w.Id == workspaceId);
+
+        if (_workspace != null)
+        {
+            Agents = _workspace.Agents;
+            Repositories = _workspace.Repositories;
+            WorkspaceName = _workspace.Name;
+            WorkspacePath = _workspace.Path;
+            CurrentBranch = _workspace.GitBranch;
+            Status = _workspace.Status;
+        }
+        else
+        {
+            _toastService.ShowError($"Workspace not found: {workspaceId}");
+        }
     }
 
     partial void OnSelectedAgentChanged(Agent? value)

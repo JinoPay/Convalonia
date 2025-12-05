@@ -8,6 +8,7 @@ using Convalonia.Models;
 using Convalonia.Services;
 using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Toast;
+using Jinobald.Core.Services.Regions;
 
 namespace Convalonia.ViewModels;
 
@@ -18,6 +19,7 @@ public partial class WorkspaceListViewModel : ViewModelBase
 {
     private readonly WorkspaceService _workspaceService;
     private readonly IToastService _toastService;
+    private readonly IRegionManager _regionManager;
 
     [ObservableProperty]
     private ObservableCollection<Workspace> _workspaces;
@@ -36,10 +38,12 @@ public partial class WorkspaceListViewModel : ViewModelBase
 
     public WorkspaceListViewModel(
         WorkspaceService workspaceService,
-        IToastService toastService)
+        IToastService toastService,
+        IRegionManager regionManager)
     {
         _workspaceService = workspaceService;
         _toastService = toastService;
+        _regionManager = regionManager;
         _workspaces = _workspaceService.Workspaces;
     }
 
@@ -113,11 +117,8 @@ public partial class WorkspaceListViewModel : ViewModelBase
         SelectedWorkspace = workspace;
         _workspaceService.UpdateLastAccessed(workspace.Id);
 
-        // TODO: Implement navigation to WorkspaceView
-        // For now, just show a toast
-        _toastService.ShowInfo($"Selected workspace: {workspace.Name}");
-
-        await Task.CompletedTask;
+        // Navigate to WorkspaceView with the selected workspace
+        await _regionManager.NavigateAsync<Views.WorkspaceView>("MainContentRegion", workspace.Id);
     }
 
     [RelayCommand]
