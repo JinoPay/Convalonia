@@ -1,0 +1,420 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Convalonia.ViewModels"
+             xmlns:models="using:Convalonia.Models"
+             xmlns:jino="https://github.com/JinoPay/Jinobald"
+             mc:Ignorable="d" d:DesignWidth="1600" d:DesignHeight="900"
+             x:Class="Convalonia.Views.UnifiedMainView"
+             x:DataType="vm:UnifiedMainViewModel"
+             jino:ViewModelLocator.AutoWireViewModel="True">
+
+    <Design.DataContext>
+        <vm:UnifiedMainViewModel />
+    </Design.DataContext>
+
+    <Grid ColumnDefinitions="300,5,*,5,350">
+        <!-- Left Panel: Repository & Workspace List -->
+        <Border Grid.Column="0"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{DynamicResource SystemAccentColor}"
+                BorderThickness="0,0,1,0"
+                Padding="0">
+            <Grid RowDefinitions="Auto,*,Auto">
+                <!-- Header -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        Padding="15"
+                        BorderBrush="{DynamicResource SystemAccentColor}"
+                        BorderThickness="0,0,0,1">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="레포지토리" FontSize="18" FontWeight="Bold"/>
+                        <Button Content="+ 새 레포지토리 추가"
+                                Command="{Binding AddRepositoryCommand}"
+                                HorizontalAlignment="Stretch"
+                                Padding="10,6"
+                                FontSize="13"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Repository & Workspace List -->
+                <ScrollViewer Grid.Row="1">
+                    <StackPanel Spacing="0" Margin="10">
+                        <!-- Empty State -->
+                        <Border IsVisible="{Binding !Repositories.Count}"
+                                Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                                CornerRadius="8"
+                                Padding="20"
+                                Margin="0,10">
+                            <StackPanel Spacing="10" HorizontalAlignment="Center">
+                                <TextBlock Text="📂" FontSize="32" HorizontalAlignment="Center"/>
+                                <TextBlock Text="레포지토리 없음" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                <TextBlock Text="새 레포지토리를 추가하세요" FontSize="11" Opacity="0.7" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Repository Items -->
+                        <ItemsControl ItemsSource="{Binding Repositories}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="models:SourceRepository">
+                                    <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                                            CornerRadius="8"
+                                            Padding="12"
+                                            Margin="0,0,0,10"
+                                            BorderBrush="{DynamicResource SystemAccentColor}"
+                                            BorderThickness="1">
+                                        <Grid RowDefinitions="Auto,Auto,Auto">
+                                            <!-- Repository Header -->
+                                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding Name}"
+                                                           FontSize="14"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1"
+                                                        Content="+"
+                                                        ToolTip.Tip="새 워크스페이스"
+                                                        Command="{Binding $parent[UserControl].((vm:UnifiedMainViewModel)DataContext).CreateWorkspaceForRepositoryCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Width="24"
+                                                        Height="24"
+                                                        FontSize="14"
+                                                        Padding="0"
+                                                        Margin="0,0,4,0"/>
+                                                <Button Grid.Column="2"
+                                                        Content="🗑️"
+                                                        ToolTip.Tip="레포지토리 제거"
+                                                        Command="{Binding $parent[UserControl].((vm:UnifiedMainViewModel)DataContext).RemoveRepositoryCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Width="24"
+                                                        Height="24"
+                                                        FontSize="10"
+                                                        Padding="0"/>
+                                            </Grid>
+
+                                            <!-- Repository Info -->
+                                            <StackPanel Grid.Row="1" Spacing="4" Margin="0,8,0,0">
+                                                <TextBlock FontSize="10" Opacity="0.6">
+                                                    <Run Text="📍"/>
+                                                    <Run Text="{Binding SourceType}"/>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding SourcePath}"
+                                                           FontSize="9"
+                                                           Opacity="0.5"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+
+                                            <!-- Workspace List -->
+                                            <Border Grid.Row="2"
+                                                    IsVisible="{Binding Workspaces.Count}"
+                                                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                                    CornerRadius="6"
+                                                    Padding="8"
+                                                    Margin="0,8,0,0">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock Text="워크스페이스" FontSize="11" FontWeight="SemiBold" Opacity="0.7"/>
+                                                    <ItemsControl ItemsSource="{Binding Workspaces}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate DataType="models:Workspace">
+                                                                <Button Background="Transparent"
+                                                                        BorderThickness="0"
+                                                                        Padding="6,4"
+                                                                        HorizontalAlignment="Stretch"
+                                                                        HorizontalContentAlignment="Left"
+                                                                        Command="{Binding $parent[UserControl].((vm:UnifiedMainViewModel)DataContext).SelectWorkspaceCommand}"
+                                                                        CommandParameter="{Binding}"
+                                                                        ToolTip.Tip="클릭하여 워크스페이스 열기">
+                                                                    <Grid ColumnDefinitions="*,Auto">
+                                                                        <StackPanel Grid.Column="0" Spacing="2">
+                                                                            <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="Medium"/>
+                                                                            <TextBlock FontSize="9" Opacity="0.6">
+                                                                                <Run Text="🌿"/>
+                                                                                <Run Text="{Binding GitBranch}"/>
+                                                                            </TextBlock>
+                                                                        </StackPanel>
+                                                                        <Button Grid.Column="1"
+                                                                                Content="×"
+                                                                                Command="{Binding $parent[UserControl].((vm:UnifiedMainViewModel)DataContext).DeleteWorkspaceCommand}"
+                                                                                CommandParameter="{Binding}"
+                                                                                Width="20"
+                                                                                Height="20"
+                                                                                FontSize="14"
+                                                                                Padding="0"
+                                                                                ToolTip.Tip="워크스페이스 삭제"/>
+                                                                    </Grid>
+                                                                </Button>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Settings Button -->
+                <Border Grid.Row="2"
+                        Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        Padding="15"
+                        BorderBrush="{DynamicResource SystemAccentColor}"
+                        BorderThickness="0,1,0,0">
+                    <Button Content="⚙️ 설정"
+                            Command="{Binding OpenSettingsCommand}"
+                            HorizontalAlignment="Stretch"
+                            Padding="10,6"
+                            FontSize="13"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Splitter -->
+        <GridSplitter Grid.Column="1" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"/>
+
+        <!-- Center Panel: Selected Workspace & Chat -->
+        <Border Grid.Column="2">
+            <Grid>
+                <!-- Empty State: No Workspace Selected -->
+                <Border IsVisible="{Binding !SelectedWorkspace}"
+                        Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                    <StackPanel Spacing="15" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="🚀" FontSize="64" HorizontalAlignment="Center"/>
+                        <TextBlock Text="워크스페이스를 선택하세요" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="왼쪽에서 워크스페이스를 클릭하거나 새로 만드세요" FontSize="14" Opacity="0.7" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Workspace View -->
+                <Grid IsVisible="{Binding SelectedWorkspace, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      RowDefinitions="Auto,*">
+                    <!-- Workspace Header -->
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                            Padding="20"
+                            BorderBrush="{DynamicResource SystemAccentColor}"
+                            BorderThickness="0,0,0,2">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="5">
+                                <TextBlock Text="{Binding SelectedWorkspace.Name}" FontSize="20" FontWeight="Bold"/>
+                                <TextBlock FontSize="12" Opacity="0.7">
+                                    <Run Text="🌿"/>
+                                    <Run Text="{Binding SelectedWorkspace.GitBranch}"/>
+                                    <Run Text=" | "/>
+                                    <Run Text="👥"/>
+                                    <Run Text="{Binding SelectedWorkspace.Agents.Count}"/>
+                                    <Run Text="에이전트"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                <Button Content="📁 폴더 열기"
+                                        Command="{Binding OpenWorkspaceFolderCommand}"
+                                        Padding="12,6"
+                                        FontSize="12"/>
+                                <Button Content="+ 새 채팅"
+                                        Command="{Binding CreateNewChatCommand}"
+                                        Padding="12,6"
+                                        FontSize="12"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Chat Tabs & Content -->
+                    <Grid Grid.Row="1" RowDefinitions="Auto,*">
+                        <!-- Chat Tabs -->
+                        <Border Grid.Row="0"
+                                Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                                BorderBrush="{DynamicResource SystemAccentColor}"
+                                BorderThickness="0,0,0,1"
+                                Padding="10,0">
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                <ItemsControl ItemsSource="{Binding SelectedWorkspace.Agents}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="2"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="models:Agent">
+                                            <Border Background="{Binding $parent[UserControl].((vm:UnifiedMainViewModel)DataContext).SelectedAgent.Id, Converter={StaticResource AgentSelectionConverter}, ConverterParameter={Binding Id}}"
+                                                    CornerRadius="8,8,0,0"
+                                                    Padding="12,8"
+                                                    Margin="0,4,0,0"
+                                                    BorderBrush="{DynamicResource SystemAccentColor}"
+                                                    BorderThickness="1,1,1,0">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <Button Grid.Column="0"
+                                                            Background="Transparent"
+                                                            BorderThickness="0"
+                                                            Padding="0"
+                                                            Command="{Binding $parent[UserControl].((vm:UnifiedMainViewModel)DataContext).SelectChatCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <StackPanel Spacing="2">
+                                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Medium"/>
+                                                            <TextBlock Text="{Binding Status}" FontSize="9" Opacity="0.6"/>
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Grid.Column="1"
+                                                            Content="×"
+                                                            Command="{Binding $parent[UserControl].((vm:UnifiedMainViewModel)DataContext).DeleteAgentCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Width="20"
+                                                            Height="20"
+                                                            FontSize="14"
+                                                            Padding="0"
+                                                            Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- Chat Content -->
+                        <Border Grid.Row="1">
+                            <Grid>
+                                <!-- No Chat Selected -->
+                                <Border IsVisible="{Binding !SelectedAgent}">
+                                    <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock Text="💬" FontSize="48" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="채팅을 선택하거나 새로 만드세요" FontSize="16" Opacity="0.7" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Chat View -->
+                                <ContentControl Content="{Binding SelectedAgentChatViewModel}"
+                                                IsVisible="{Binding SelectedAgentChatViewModel, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <ContentControl.ContentTemplate>
+                                    <DataTemplate DataType="vm:ChatViewModel">
+                                        <Grid RowDefinitions="*,Auto">
+                                            <!-- Messages -->
+                                            <ScrollViewer Grid.Row="0" Padding="15">
+                                                <ItemsControl ItemsSource="{Binding Messages}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                                                    CornerRadius="8"
+                                                                    Padding="12"
+                                                                    Margin="0,0,0,10"
+                                                                    BorderBrush="{DynamicResource SystemAccentColor}"
+                                                                    BorderThickness="1">
+                                                                <Grid RowDefinitions="Auto,Auto">
+                                                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                                                                        <TextBlock Text="{Binding Role}" FontWeight="SemiBold" FontSize="12"/>
+                                                                        <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}" FontSize="11" Opacity="0.6"/>
+                                                                    </StackPanel>
+                                                                    <TextBlock Grid.Row="1" Text="{Binding Content}" TextWrapping="Wrap" FontSize="14"/>
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+
+                                            <!-- Input Area -->
+                                            <Border Grid.Row="1"
+                                                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                                    BorderBrush="{DynamicResource SystemAccentColor}"
+                                                    BorderThickness="0,1,0,0"
+                                                    Padding="15">
+                                                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                                                    <!-- AI Model Selection & Options -->
+                                                    <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                                                                Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+                                                        <ComboBox SelectedIndex="0" Width="150">
+                                                            <ComboBoxItem Content="GPT-4"/>
+                                                            <ComboBoxItem Content="Claude 3"/>
+                                                            <ComboBoxItem Content="Gemini"/>
+                                                        </ComboBox>
+                                                        <CheckBox Content="심층 사고" IsChecked="False"/>
+                                                        <Button Content="📎 파일 첨부" Padding="8,4" FontSize="11"/>
+                                                    </StackPanel>
+
+                                                    <!-- Message Input -->
+                                                    <TextBox Grid.Row="1" Grid.Column="0"
+                                                             Text="{Binding InputMessage}"
+                                                             Watermark="메시지를 입력하세요..."
+                                                             AcceptsReturn="True"
+                                                             MinHeight="60"
+                                                             MaxHeight="200"
+                                                             TextWrapping="Wrap"
+                                                             IsEnabled="{Binding !IsSending}"/>
+
+                                                    <!-- Send Button -->
+                                                    <Button Grid.Row="1" Grid.Column="1"
+                                                            Content="전송"
+                                                            Command="{Binding SendMessageCommand}"
+                                                            IsEnabled="{Binding !IsSending}"
+                                                            VerticalAlignment="Bottom"
+                                                            Margin="10,0,0,0"
+                                                            Width="80"
+                                                            Height="60"/>
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ContentControl.ContentTemplate>
+                                </ContentControl>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Splitter -->
+        <GridSplitter Grid.Column="3" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"/>
+
+        <!-- Right Panel: File Changes & All Files -->
+        <Border Grid.Column="4"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{DynamicResource SystemAccentColor}"
+                BorderThickness="1,0,0,0">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+                <!-- Header -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        Padding="15"
+                        BorderBrush="{DynamicResource SystemAccentColor}"
+                        BorderThickness="0,0,0,1">
+                    <TextBlock Text="파일" FontSize="16" FontWeight="Bold"/>
+                </Border>
+
+                <!-- Tab Selection -->
+                <Border Grid.Row="1"
+                        Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                        Padding="10"
+                        BorderBrush="{DynamicResource SystemAccentColor}"
+                        BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <RadioButton Content="변경사항" IsChecked="True" GroupName="FileView"/>
+                        <RadioButton Content="전체 파일" GroupName="FileView"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- File List -->
+                <ScrollViewer Grid.Row="2">
+                    <StackPanel Spacing="0" Margin="10">
+                        <TextBlock Text="파일 변경사항이 여기에 표시됩니다" FontSize="12" Opacity="0.6" Margin="0,20"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Bottom Actions: Run & Terminal -->
+                <Border Grid.Row="3"
+                        Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        Padding="15"
+                        BorderBrush="{DynamicResource SystemAccentColor}"
+                        BorderThickness="0,1,0,0">
+                    <StackPanel Spacing="8">
+                        <Button Content="▶️ 런" HorizontalAlignment="Stretch" Padding="10,6" FontSize="12"/>
+                        <Button Content="⌨️ 터미널" HorizontalAlignment="Stretch" Padding="10,6" FontSize="12"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

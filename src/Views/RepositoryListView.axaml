@@ -149,13 +149,22 @@
                                             <ItemsControl ItemsSource="{Binding Workspaces}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate DataType="models:Workspace">
-                                                        <TextBlock FontSize="11" Opacity="0.7">
-                                                            <Run Text="•" />
-                                                            <Run Text="{Binding Name}" />
-                                                            <Run Text="(" />
-                                                            <Run Text="{Binding GitBranch}" />
-                                                            <Run Text=")" />
-                                                        </TextBlock>
+                                                        <Button Background="Transparent"
+                                                                BorderThickness="0"
+                                                                Padding="4,2"
+                                                                HorizontalAlignment="Stretch"
+                                                                HorizontalContentAlignment="Left"
+                                                                Command="{Binding $parent[UserControl].((vm:RepositoryListViewModel)DataContext).OpenWorkspaceCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip.Tip="클릭하여 워크스페이스 열기">
+                                                            <TextBlock FontSize="11" Opacity="0.7">
+                                                                <Run Text="•" />
+                                                                <Run Text="{Binding Name}" />
+                                                                <Run Text="(" />
+                                                                <Run Text="{Binding GitBranch}" />
+                                                                <Run Text=")" />
+                                                            </TextBlock>
+                                                        </Button>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>

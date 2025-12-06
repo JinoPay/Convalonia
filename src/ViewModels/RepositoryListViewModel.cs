@@ -111,4 +111,23 @@ public partial class RepositoryListViewModel : ViewModelBase
     {
         _toastService.ShowInfo("Repositories refreshed");
     }
+
+    /// <summary>
+    /// Opens a workspace directly from the repository list
+    /// </summary>
+    [RelayCommand]
+    private async Task OpenWorkspaceAsync(Workspace workspace)
+    {
+        if (workspace == null) return;
+
+        try
+        {
+            // Navigate to WorkspaceView with the selected workspace
+            await _regionManager.NavigateAsync<WorkspaceView>("MainContentRegion", workspace.Id);
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowError($"Failed to open workspace: {ex.Message}");
+        }
+    }
 }

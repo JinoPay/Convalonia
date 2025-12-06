@@ -27,10 +27,12 @@ public partial class MainWindow : Window
             var hasRepositories = repositoryManagementService.Repositories.Count > 0;
             if (hasRepositories)
             {
-                await regionManager.NavigateAsync<RepositoryListView>("MainContentRegion");
+                // Use the new unified main view
+                await regionManager.NavigateAsync<UnifiedMainView>("MainContentRegion");
             }
             else
             {
+                // Show setup if no repositories exist
                 await regionManager.NavigateAsync<SetupView>("MainContentRegion");
             }
         };
