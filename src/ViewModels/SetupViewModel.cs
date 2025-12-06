@@ -104,8 +104,8 @@ public partial class SetupViewModel : ViewModelBase
             if (repository != null)
             {
                 _toastService.ShowSuccess($"Repository '{repository.Name}' added successfully!");
-                // Navigate to repository list
-                await _regionManager.NavigateAsync<RepositoryListView>("MainContentRegion");
+                // Navigate to unified main view
+                await _regionManager.NavigateAsync<UnifiedMainView>("MainContentRegion");
             }
         }
         catch (Exception ex)
@@ -152,8 +152,8 @@ public partial class SetupViewModel : ViewModelBase
             if (repository != null)
             {
                 _toastService.ShowSuccess($"Repository '{repository.Name}' added successfully!");
-                // Navigate to repository list
-                await _regionManager.NavigateAsync<RepositoryListView>("MainContentRegion");
+                // Navigate to unified main view
+                await _regionManager.NavigateAsync<UnifiedMainView>("MainContentRegion");
             }
         }
         catch (Exception ex)
@@ -213,8 +213,8 @@ public partial class SetupViewModel : ViewModelBase
             if (repository != null)
             {
                 _toastService.ShowSuccess($"Repository '{repository.Name}' created successfully!");
-                // Navigate to repository list
-                await _regionManager.NavigateAsync<RepositoryListView>("MainContentRegion");
+                // Navigate to unified main view
+                await _regionManager.NavigateAsync<UnifiedMainView>("MainContentRegion");
             }
         }
         catch (Exception ex)

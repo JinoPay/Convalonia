@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -34,11 +35,19 @@ public class RepositoryManagementService
             Directory.CreateDirectory(_baseDataPath);
         }
 
-        // Load repositories from disk
-        _ = LoadRepositoriesAsync();
+        // Load repositories synchronously in constructor
+        LoadRepositoriesAsync().Wait();
     }
 
     public ObservableCollection<SourceRepository> Repositories => _repositories;
+
+    /// <summary>
+    /// Initializes the service by loading repositories asynchronously
+    /// </summary>
+    public async Task InitializeAsync()
+    {
+        await LoadRepositoriesAsync();
+    }
 
     /// <summary>
     /// Adds a local git repository
@@ -218,13 +227,46 @@ public class RepositoryManagementService
 
     private async Task LoadRepositoriesAsync()
     {
-        // TODO: Implement persistence (JSON file or database)
-        await Task.CompletedTask;
+        try
+        {
+            var configPath = Path.Combine(_baseDataPath, "repositories.json");
+            if (!File.Exists(configPath))
+                return;
+
+            var json = await File.ReadAllTextAsync(configPath);
+            var repositories = System.Text.Json.JsonSerializer.Deserialize<List<SourceRepository>>(json);
+
+            if (repositories != null)
+            {
+                _repositories.Clear();
+                foreach (var repo in repositories)
+                {
+                    _repositories.Add(repo);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't crash
+            Console.WriteLine($"Failed to load repositories: {ex.Message}");
+        }
     }
 
     private async Task SaveRepositoriesAsync()
     {
-        // TODO: Implement persistence (JSON file or database)
-        await Task.CompletedTask;
+        try
+        {
+            var configPath = Path.Combine(_baseDataPath, "repositories.json");
+            var json = System.Text.Json.JsonSerializer.Serialize(_repositories.ToList(), new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            await File.WriteAllTextAsync(configPath, json);
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't crash
+            Console.WriteLine($"Failed to save repositories: {ex.Message}");
+        }
     }
 }
