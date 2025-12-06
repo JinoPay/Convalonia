@@ -14,7 +14,7 @@
         <Panel>
             <!-- Main Content Region -->
             <ContentControl jino:Region.Name="MainContentRegion"
-                          jino:Region.DefaultView="views:WorkspaceListView"
+                          jino:Region.DefaultView="views:SetupView"
                           jino:Region.KeepAlive="True" />
 
             <!-- Toast Notification Host -->

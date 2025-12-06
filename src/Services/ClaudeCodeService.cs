@@ -28,6 +28,35 @@ public class ClaudeCodeService : IDisposable
     }
 
     /// <summary>
+    /// Checks if Claude Code CLI is installed and available
+    /// </summary>
+    public static async Task<bool> IsClaudeCodeInstalledAsync()
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "claude",
+                Arguments = "--version",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = processInfo };
+            process.Start();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Starts a Claude Code CLI session
     /// </summary>
     public async Task<bool> StartSessionAsync()
