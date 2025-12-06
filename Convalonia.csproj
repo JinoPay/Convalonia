@@ -18,8 +18,8 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Jinobald.Avalonia" Version="1.0.0" />
-    <PackageReference Include="Jinobald.Core" Version="1.0.0" />
+    <PackageReference Include="Jinobald.Avalonia" Version="1.0.1" />
+    <PackageReference Include="Jinobald.Core" Version="1.0.1" />
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
