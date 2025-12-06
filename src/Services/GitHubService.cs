@@ -11,6 +11,37 @@ namespace Convalonia.Services;
 public class GitHubService
 {
     /// <summary>
+    /// Validates if a Git URL is accessible
+    /// </summary>
+    public async Task<bool> ValidateGitUrlAsync(string repoUrl)
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"ls-remote {repoUrl} HEAD",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return false;
+
+            await process.WaitForExitAsync();
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to validate git URL: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Clones a GitHub repository to the specified path
     /// </summary>
     public async Task<bool> CloneRepositoryAsync(string repoUrl, string targetPath)

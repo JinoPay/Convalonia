@@ -1,0 +1,162 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Convalonia.ViewModels"
+             xmlns:jino="https://github.com/JinoPay/Jinobald"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Convalonia.Views.SetupView"
+             x:DataType="vm:SetupViewModel"
+             jino:ViewModelLocator.AutoWireViewModel="True">
+
+    <Design.DataContext>
+        <vm:SetupViewModel />
+    </Design.DataContext>
+
+    <ScrollViewer>
+        <StackPanel Spacing="30" Margin="40" MaxWidth="700">
+            <!-- Header -->
+            <StackPanel Spacing="10">
+                <TextBlock Text="Convalonia"
+                           FontSize="36"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Multi-Agent Parallel Workspace for Claude"
+                           FontSize="16"
+                           Opacity="0.7"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Claude Code Status -->
+            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    BorderBrush="{DynamicResource SystemAccentColor}"
+                    BorderThickness="2"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="📦 설치 확인"
+                               FontSize="18"
+                               FontWeight="SemiBold" />
+
+                    <StackPanel Spacing="8" IsVisible="{Binding IsCheckingClaudeCode}">
+                        <TextBlock Text="Claude Code 설치 확인 중..."
+                                   FontSize="14"
+                                   Opacity="0.8" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="8" IsVisible="{Binding !IsCheckingClaudeCode}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Claude Code CLI: " FontSize="14" />
+                            <TextBlock Text="✓ 설치됨"
+                                       IsVisible="{Binding IsClaudeCodeInstalled}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="Green" />
+                            <TextBlock Text="✗ 미설치"
+                                       IsVisible="{Binding !IsClaudeCodeInstalled}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="Red" />
+                        </StackPanel>
+
+                        <TextBlock Text="⚠️ Claude Code CLI가 설치되어 있지 않습니다. 설치 후 앱을 다시 시작해주세요."
+                                   IsVisible="{Binding !IsClaudeCodeInstalled}"
+                                   FontSize="13"
+                                   Foreground="Orange"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Repository Addition Options -->
+            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    CornerRadius="8"
+                    Padding="20"
+                    BorderBrush="{DynamicResource SystemAccentColor}"
+                    BorderThickness="2">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="🚀 레포지토리 추가"
+                               FontSize="18"
+                               FontWeight="SemiBold" />
+
+                    <!-- Option 1: Open Local Git Repository -->
+                    <Button Command="{Binding SelectLocalRepositoryCommand}"
+                            HorizontalAlignment="Stretch"
+                            Padding="15"
+                            IsEnabled="{Binding IsClaudeCodeInstalled}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="📂 로컬 Git 레포지토리 열기"
+                                       FontSize="15"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Text="이미 존재하는 Git 레포지토리 폴더를 선택합니다"
+                                       FontSize="12"
+                                       Opacity="0.7"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Option 2: Clone from URL -->
+                    <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                            CornerRadius="6"
+                            Padding="15">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="🌐 Git URL에서 클론"
+                                       FontSize="15"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Text="GitHub, GitLab 등의 Git URL을 입력하세요"
+                                       FontSize="12"
+                                       Opacity="0.7" />
+
+                            <TextBox Text="{Binding GitUrl}"
+                                     Watermark="https://github.com/username/repo.git"
+                                     IsEnabled="{Binding IsClaudeCodeInstalled}" />
+
+                            <Button Content="클론"
+                                    Command="{Binding CloneFromUrlCommand}"
+                                    HorizontalAlignment="Right"
+                                    Padding="20,8" />
+
+                            <TextBlock Text="클론 중..."
+                                       IsVisible="{Binding IsCloningRepository}"
+                                       FontSize="12"
+                                       Opacity="0.7"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Option 3: Create New Project -->
+                    <Button Command="{Binding CreateNewProjectCommand}"
+                            HorizontalAlignment="Stretch"
+                            Padding="15"
+                            IsEnabled="{Binding IsClaudeCodeInstalled}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="✨ 새 프로젝트 만들기"
+                                       FontSize="15"
+                                       FontWeight="SemiBold" />
+                            <TextBlock FontSize="12" Opacity="0.7" TextWrapping="Wrap">
+                                <Run Text="폴더를 선택하고 Git을 초기화합니다"/><LineBreak/>
+                                <Run Text="(빈 폴더 또는 기존 폴더 모두 가능)"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- Help Section -->
+            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="💡 안내"
+                               FontSize="16"
+                               FontWeight="SemiBold" />
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.8">
+                        <Run Text="• 모든 옵션은 Git 레포지토리가 필요합니다"/><LineBreak/>
+                        <Run Text="• 레포지토리 추가 후 워크스페이스를 생성할 수 있습니다"/><LineBreak/>
+                        <Run Text="• 각 워크스페이스는 독립적인 브랜치를 가집니다"/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
