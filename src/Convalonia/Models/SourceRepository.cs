@@ -17,9 +17,14 @@ public class SourceRepository
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// Original repository path (for local repos) or URL (for remote repos)
+    /// Local path to the repository (for both local and cloned remote repos)
     /// </summary>
     public string SourcePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Remote git URL (only for remote repositories)
+    /// </summary>
+    public string? RemoteUrl { get; set; }
 
     /// <summary>
     /// Type of source: Local or Remote

@@ -3,18 +3,15 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:jino="https://github.com/JinoPay/Jinobald"
-        xmlns:views="using:Convalonia.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="Convalonia.MainWindow"
         Title="Convalonia - Multi-Agent Workspace"
-        Width="800" Height="600"
-        jino:ViewModelLocator.AutoWireViewModel="True">
+        Width="800" Height="600">
 
     <jino:DialogHost x:Name="DialogHost">
         <Panel>
             <!-- Main Content Region -->
             <ContentControl jino:Region.Name="MainContentRegion"
-                          jino:Region.DefaultView="views:SetupView"
                           jino:Region.KeepAlive="True" />
 
             <!-- Toast Notification Host -->

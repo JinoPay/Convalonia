@@ -41,4 +41,7 @@ public interface IGitService
     Task<bool> PushBranchAsync(string workspacePath, string branchName, bool setUpstream = true);
     Task<string?> CreatePullRequestAsync(string workspacePath, string title, string body, string baseBranch = "main");
     Task<string?> GetCurrentRemoteUrlAsync(string workspacePath);
+
+    // CLI Availability checks
+    Task<bool> IsGitHubCliInstalledAsync();
 }

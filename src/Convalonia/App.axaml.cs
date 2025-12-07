@@ -20,9 +20,6 @@ public partial class App : ApplicationBase<MainWindow>
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
-
-        // Setup global exception handlers
-        SetupExceptionHandling();
     }
 
     /// <summary>
@@ -108,20 +105,19 @@ public partial class App : ApplicationBase<MainWindow>
         containerRegistry.RegisterForNavigation<ChatView, ChatViewModel>();
     }
 
-    private void SetupExceptionHandling()
+    /// <summary>
+    /// Application initialization logic - called after DI container is set up
+    /// </summary>
+    public override async Task OnInitializeAsync()
     {
-        // Handle unhandled exceptions in the current AppDomain
-        AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+        // Initialize RepositoryManagementService to load existing repositories
+        var repositoryService = Container?.Resolve<RepositoryManagementService>();
+        if (repositoryService != null)
         {
-            var exception = args.ExceptionObject as Exception;
-            Log.Fatal(exception, "[AppDomain.UnhandledException] Critical unhandled exception occurred. IsTerminating={IsTerminating}", args.IsTerminating);
-        };
+            await repositoryService.InitializeAsync();
+            Log.Information("RepositoryManagementService initialized with {Count} repositories", repositoryService.Repositories.Count);
+        }
 
-        // Handle unobserved task exceptions
-        TaskScheduler.UnobservedTaskException += (sender, args) =>
-        {
-            Log.Error(args.Exception, "[TaskScheduler.UnobservedTaskException] Unobserved task exception occurred");
-            args.SetObserved(); // Prevent process termination
-        };
+        await base.OnInitializeAsync();
     }
 }

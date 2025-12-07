@@ -129,8 +129,9 @@ public class RepositoryManagementService : IRepositoryManagementService
         {
             Id = Guid.NewGuid(),
             Name = repoName,
-            SourcePath = gitUrl,
+            SourcePath = clonePath, // Use local clone path, not git URL
             SourceType = RepositorySourceType.Remote,
+            RemoteUrl = gitUrl, // Store the original URL separately
             CreatedAt = DateTime.Now,
             LastAccessedAt = DateTime.Now
         };
