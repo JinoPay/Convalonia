@@ -306,13 +306,39 @@
                                                                     Padding="12"
                                                                     Margin="0,0,0,10"
                                                                     BorderBrush="{DynamicResource SystemAccentColor}"
-                                                                    BorderThickness="1">
-                                                                <Grid RowDefinitions="Auto,Auto">
-                                                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                                                                    BorderThickness="1"
+                                                                    Name="MessageBorder">
+                                                                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                                                                    <!-- Message Header -->
+                                                                    <StackPanel Grid.Row="0" Grid.Column="0"
+                                                                                Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
                                                                         <TextBlock Text="{Binding Role}" FontWeight="SemiBold" FontSize="12"/>
                                                                         <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}" FontSize="11" Opacity="0.6"/>
+                                                                        <TextBlock Text="{Binding TurnNumber, StringFormat='Turn {0}'}" FontSize="10" Opacity="0.5"/>
                                                                     </StackPanel>
-                                                                    <TextBlock Grid.Row="1" Text="{Binding Content}" TextWrapping="Wrap" FontSize="14"/>
+
+                                                                    <!-- Revert Button (shown on hover for assistant messages) -->
+                                                                    <Button Grid.Row="0" Grid.Column="1"
+                                                                            Content="⟲ Revert"
+                                                                            Command="{Binding $parent[UserControl].((vm:UnifiedMainViewModel)DataContext).SelectedAgentChatViewModel.RevertToCheckpointCommand}"
+                                                                            CommandParameter="{Binding TurnNumber}"
+                                                                            FontSize="10"
+                                                                            Padding="6,2"
+                                                                            ToolTip.Tip="Revert to this checkpoint"
+                                                                            IsVisible="False">
+                                                                        <Button.Styles>
+                                                                            <Style Selector="Button">
+                                                                                <Setter Property="IsVisible" Value="False"/>
+                                                                            </Style>
+                                                                            <Style Selector="Border:pointerover Button">
+                                                                                <Setter Property="IsVisible" Value="True"/>
+                                                                            </Style>
+                                                                        </Button.Styles>
+                                                                    </Button>
+
+                                                                    <!-- Message Content -->
+                                                                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                                                               Text="{Binding Content}" TextWrapping="Wrap" FontSize="14"/>
                                                                 </Grid>
                                                             </Border>
                                                         </DataTemplate>
