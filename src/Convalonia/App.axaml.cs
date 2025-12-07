@@ -81,6 +81,7 @@ public partial class App : ApplicationBase<MainWindow>
         containerRegistry.RegisterSingleton<IFileSystemService, FileSystemService>();
         containerRegistry.RegisterSingleton<IRepositoryService, RepositoryService>();
         containerRegistry.RegisterSingleton<IRepositoryManagementService, RepositoryManagementService>();
+        containerRegistry.RegisterSingleton<IClaudeCodeServiceFactory, ClaudeCodeServiceFactory>();
 
         // Also register concrete types for backwards compatibility
         containerRegistry.RegisterSingleton<GitHubService>();
@@ -89,7 +90,7 @@ public partial class App : ApplicationBase<MainWindow>
         containerRegistry.RegisterSingleton<RepositoryService>();
         containerRegistry.RegisterSingleton<RepositoryManagementService>();
 
-        // Note: ClaudeCodeService is created per-agent with workspace path
+        // ClaudeCodeService is created per-agent via Factory pattern
 
         // Register ViewModels
         containerRegistry.RegisterForNavigation<SetupView, SetupViewModel>();

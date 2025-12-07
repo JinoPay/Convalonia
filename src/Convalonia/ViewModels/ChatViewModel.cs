@@ -57,12 +57,13 @@ public partial class ChatViewModel : ViewModelBase
     public ChatViewModel(
         Agent agent,
         string workspacePath,
-        IToastService toastService)
+        IToastService toastService,
+        IClaudeCodeServiceFactory claudeCodeServiceFactory)
     {
         _agent = agent;
         _workspacePath = workspacePath;
         _toastService = toastService;
-        _claudeCodeService = new ClaudeCodeService(workspacePath);
+        _claudeCodeService = claudeCodeServiceFactory.Create(workspacePath);
 
         // Subscribe to terminal output
         _claudeCodeService.OutputReceived += OnOutputReceived;
