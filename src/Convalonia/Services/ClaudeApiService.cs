@@ -10,23 +10,48 @@ using Convalonia.Models;
 namespace Convalonia.Services;
 
 /// <summary>
+/// Interface for Claude API service
+/// </summary>
+public interface IClaudeApiService
+{
+    Task<ClaudeResponse> SendMessageAsync(
+        List<ClaudeMessage> messages,
+        string model = "claude-sonnet-4-5-20250929",
+        int maxTokens = 4096,
+        CancellationToken cancellationToken = default);
+
+    IAsyncEnumerable<ClaudeStreamEvent> StreamMessageAsync(
+        List<ClaudeMessage> messages,
+        string model = "claude-sonnet-4-5-20250929",
+        int maxTokens = 4096);
+}
+
+/// <summary>
 /// Handles communication with Claude API
 /// </summary>
-public class ClaudeApiService
+public class ClaudeApiService : IClaudeApiService
 {
     private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
     private const string ApiBaseUrl = "https://api.anthropic.com/v1";
 
-    public ClaudeApiService(string apiKey)
+    /// <summary>
+    /// Creates a new ClaudeApiService with IHttpClientFactory (recommended)
+    /// </summary>
+    public ClaudeApiService(HttpClient httpClient, string apiKey)
     {
-        _apiKey = apiKey;
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(ApiBaseUrl)
-        };
-        _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey);
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        _httpClient.BaseAddress = new Uri(ApiBaseUrl);
+        _httpClient.DefaultRequestHeaders.Add("x-api-key", apiKey);
         _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+    }
+
+    /// <summary>
+    /// Creates a new ClaudeApiService (for backward compatibility)
+    /// Note: Consider using IHttpClientFactory for proper connection pooling
+    /// </summary>
+    [Obsolete("Use the constructor with HttpClient parameter for proper connection pooling")]
+    public ClaudeApiService(string apiKey) : this(new HttpClient(), apiKey)
+    {
     }
 
     /// <summary>

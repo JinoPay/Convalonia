@@ -11,12 +11,12 @@ namespace Convalonia.Services;
 /// <summary>
 /// Manages workspaces for parallel Claude agent operations
 /// </summary>
-public class WorkspaceService
+public class WorkspaceService : IWorkspaceService
 {
     private readonly ObservableCollection<Workspace> _workspaces = new();
     private readonly string _baseWorkspacePath;
-    private readonly GitHubService _gitHubService;
-    private readonly RepositoryService _repositoryService;
+    private readonly IGitService _gitHubService;
+    private readonly IRepositoryService _repositoryService;
 
     public WorkspaceService() : this(
         Path.Combine(
@@ -26,7 +26,7 @@ public class WorkspaceService
     {
     }
 
-    public WorkspaceService(string baseWorkspacePath, GitHubService gitHubService)
+    public WorkspaceService(string baseWorkspacePath, IGitService gitHubService)
     {
         _baseWorkspacePath = baseWorkspacePath;
         _gitHubService = gitHubService;
@@ -40,7 +40,7 @@ public class WorkspaceService
     }
 
     public ObservableCollection<Workspace> Workspaces => _workspaces;
-    public RepositoryService RepositoryService => _repositoryService;
+    public IRepositoryService RepositoryService => _repositoryService;
 
     /// <summary>
     /// Creates a new workspace with an optional name (generates random name if not provided)

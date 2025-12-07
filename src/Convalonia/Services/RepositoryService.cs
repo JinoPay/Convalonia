@@ -9,11 +9,11 @@ namespace Convalonia.Services;
 /// <summary>
 /// Service for managing repositories within workspaces
 /// </summary>
-public class RepositoryService
+public class RepositoryService : IRepositoryService
 {
-    private readonly GitHubService _gitHubService;
+    private readonly IGitService _gitHubService;
 
-    public RepositoryService(GitHubService gitHubService)
+    public RepositoryService(IGitService gitHubService)
     {
         _gitHubService = gitHubService;
     }

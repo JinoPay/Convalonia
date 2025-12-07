@@ -9,7 +9,7 @@ namespace Convalonia.Services;
 /// <summary>
 /// Handles file system operations for workspaces
 /// </summary>
-public class FileSystemService
+public class FileSystemService : IFileSystemService
 {
     /// <summary>
     /// Reads a file from the workspace

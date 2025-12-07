@@ -12,16 +12,17 @@ namespace Convalonia.Services;
 /// Manages source repositories (the top-level git repositories)
 /// Each source repository can have multiple workspaces
 /// </summary>
-public class RepositoryManagementService
+public class RepositoryManagementService : IRepositoryManagementService
 {
     private readonly ObservableCollection<SourceRepository> _repositories = new();
     private readonly string _baseDataPath;
-    private readonly GitHubService _gitHubService;
-    private readonly WorkspaceService _workspaceService;
+    private readonly IGitService _gitHubService;
+    private readonly IWorkspaceService _workspaceService;
+    private bool _isInitialized;
 
     public RepositoryManagementService(
-        GitHubService gitHubService,
-        WorkspaceService workspaceService)
+        IGitService gitHubService,
+        IWorkspaceService workspaceService)
     {
         _gitHubService = gitHubService;
         _workspaceService = workspaceService;
@@ -35,18 +36,23 @@ public class RepositoryManagementService
             Directory.CreateDirectory(_baseDataPath);
         }
 
-        // Load repositories synchronously in constructor
-        LoadRepositoriesAsync().Wait();
+        // Note: InitializeAsync() must be called after construction to load repositories
+        // This avoids the deadlock issue from calling .Wait() in constructor
     }
 
     public ObservableCollection<SourceRepository> Repositories => _repositories;
 
     /// <summary>
-    /// Initializes the service by loading repositories asynchronously
+    /// Initializes the service by loading repositories asynchronously.
+    /// Must be called once after construction before using other methods.
     /// </summary>
     public async Task InitializeAsync()
     {
+        if (_isInitialized)
+            return;
+
         await LoadRepositoriesAsync();
+        _isInitialized = true;
     }
 
     /// <summary>

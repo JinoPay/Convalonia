@@ -8,7 +8,7 @@ namespace Convalonia.Services;
 /// <summary>
 /// Handles GitHub operations (clone, branch, PR, etc.)
 /// </summary>
-public class GitHubService
+public class GitHubService : IGitService
 {
     /// <summary>
     /// Validates if a Git URL is accessible
