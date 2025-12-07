@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Convalonia.Models;
+using Convalonia.Validators;
+using FluentValidation;
 
 namespace Convalonia.Services;
 
@@ -12,10 +14,12 @@ namespace Convalonia.Services;
 public class RepositoryService : IRepositoryService
 {
     private readonly IGitService _gitHubService;
+    private readonly IValidator<Repository> _repositoryValidator;
 
-    public RepositoryService(IGitService gitHubService)
+    public RepositoryService(IGitService gitHubService, IValidator<Repository> repositoryValidator)
     {
         _gitHubService = gitHubService;
+        _repositoryValidator = repositoryValidator;
     }
 
     /// <summary>
@@ -65,6 +69,14 @@ public class RepositoryService : IRepositoryService
             HasChanges = false
         };
 
+        // Validate repository before adding
+        var validationResult = await _repositoryValidator.ValidateAsync(repository);
+        if (!validationResult.IsValid)
+        {
+            var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+            throw new ValidationException($"Repository validation failed: {errors}");
+        }
+
         workspace.Repositories.Add(repository);
         return repository;
     }
@@ -107,6 +119,14 @@ public class RepositoryService : IRepositoryService
             CreatedAt = DateTime.Now,
             HasChanges = false
         };
+
+        // Validate repository before adding
+        var validationResult = await _repositoryValidator.ValidateAsync(repository);
+        if (!validationResult.IsValid)
+        {
+            var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+            throw new ValidationException($"Repository validation failed: {errors}");
+        }
 
         workspace.Repositories.Add(repository);
         return repository;

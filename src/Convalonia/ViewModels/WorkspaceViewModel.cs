@@ -19,6 +19,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
     private Workspace? _workspace;
     private readonly WorkspaceService _workspaceService;
     private readonly IToastService _toastService;
+    private readonly IClaudeCodeServiceFactory _claudeCodeServiceFactory;
 
     [ObservableProperty]
     private ObservableCollection<Agent> _agents = new();
@@ -49,10 +50,12 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
 
     public WorkspaceViewModel(
         WorkspaceService workspaceService,
-        IToastService toastService)
+        IToastService toastService,
+        IClaudeCodeServiceFactory claudeCodeServiceFactory)
     {
         _workspaceService = workspaceService;
         _toastService = toastService;
+        _claudeCodeServiceFactory = claudeCodeServiceFactory;
     }
 
     public async Task OnNavigatedToAsync(NavigationContext context)
@@ -110,7 +113,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
 
         if (value != null && _workspace != null)
         {
-            var chatViewModel = new ChatViewModel(value, _workspace.Path, _toastService);
+            var chatViewModel = new ChatViewModel(value, _workspace.Path, _toastService, _claudeCodeServiceFactory);
             chatViewModel.FirstMessageSent += OnFirstMessageSent;
             SelectedAgentChatViewModel = chatViewModel;
         }

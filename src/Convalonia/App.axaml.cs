@@ -7,6 +7,9 @@ using Jinobald.Core.Ioc;
 using Convalonia.Views;
 using Convalonia.ViewModels;
 using Convalonia.Services;
+using Convalonia.Models;
+using Convalonia.Validators;
+using FluentValidation;
 using Serilog;
 using Serilog.Events;
 
@@ -65,12 +68,20 @@ public partial class App : ApplicationBase<MainWindow>
 
     public override void RegisterTypes(IContainerRegistry containerRegistry)
     {
+        // Register Validators
+        containerRegistry.RegisterSingleton<IValidator<Repository>, RepositoryValidator>();
+        containerRegistry.RegisterSingleton<IValidator<Workspace>, WorkspaceValidator>();
+        containerRegistry.RegisterSingleton<IValidator<Agent>, AgentValidator>();
+        containerRegistry.RegisterSingleton<IValidator<string>, GitCommitMessageValidator>();
+        containerRegistry.RegisterSingleton<IValidator<CommitMessageRequest>, CommitMessageRequestValidator>();
+
         // Register Services with interfaces
         containerRegistry.RegisterSingleton<IGitService, GitHubService>();
         containerRegistry.RegisterSingleton<IWorkspaceService, WorkspaceService>();
         containerRegistry.RegisterSingleton<IFileSystemService, FileSystemService>();
         containerRegistry.RegisterSingleton<IRepositoryService, RepositoryService>();
         containerRegistry.RegisterSingleton<IRepositoryManagementService, RepositoryManagementService>();
+        containerRegistry.RegisterSingleton<IClaudeCodeServiceFactory, ClaudeCodeServiceFactory>();
 
         // Also register concrete types for backwards compatibility
         containerRegistry.RegisterSingleton<GitHubService>();
@@ -79,7 +90,7 @@ public partial class App : ApplicationBase<MainWindow>
         containerRegistry.RegisterSingleton<RepositoryService>();
         containerRegistry.RegisterSingleton<RepositoryManagementService>();
 
-        // Note: ClaudeCodeService is created per-agent with workspace path
+        // ClaudeCodeService is created per-agent via Factory pattern
 
         // Register ViewModels
         containerRegistry.RegisterForNavigation<SetupView, SetupViewModel>();
