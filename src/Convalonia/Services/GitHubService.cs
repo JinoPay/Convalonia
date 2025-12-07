@@ -2,6 +2,8 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Convalonia.Services.Validation;
+using Serilog;
 
 namespace Convalonia.Services;
 
@@ -10,17 +12,22 @@ namespace Convalonia.Services;
 /// </summary>
 public class GitHubService : IGitService
 {
+    private readonly ILogger _logger = Log.ForContext<GitHubService>();
     /// <summary>
     /// Validates if a Git URL is accessible
     /// </summary>
     public async Task<bool> ValidateGitUrlAsync(string repoUrl)
     {
+        // Validate Git URL format
+        if (!InputValidator.IsValidGitUrl(repoUrl))
+            throw new ValidationException("repoUrl", "Invalid Git repository URL");
+
         try
         {
             var processInfo = new ProcessStartInfo
             {
                 FileName = "git",
-                Arguments = $"ls-remote {repoUrl} HEAD",
+                Arguments = $"ls-remote {InputValidator.EscapeGitArgument(repoUrl)} HEAD",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -36,7 +43,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to validate git URL: {ex.Message}");
+            _logger.Error(ex, "Failed to validate git URL: {RepoUrl}", repoUrl);
             return false;
         }
     }
@@ -46,12 +53,18 @@ public class GitHubService : IGitService
     /// </summary>
     public async Task<bool> CloneRepositoryAsync(string repoUrl, string targetPath)
     {
+        // Validate inputs
+        if (!InputValidator.IsValidGitUrl(repoUrl))
+            throw new ValidationException("repoUrl", "Invalid Git repository URL");
+        if (!InputValidator.IsValidPath(targetPath))
+            throw new ValidationException("targetPath", "Invalid target path");
+
         try
         {
             var processInfo = new ProcessStartInfo
             {
                 FileName = "git",
-                Arguments = $"clone {repoUrl} \"{targetPath}\"",
+                Arguments = $"clone {InputValidator.EscapeGitArgument(repoUrl)} {InputValidator.EscapeGitArgument(targetPath)}",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -67,7 +80,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to clone repository: {ex.Message}");
+            _logger.Error(ex, "Failed to clone repository from {RepoUrl} to {TargetPath}", repoUrl, targetPath);
             return false;
         }
     }
@@ -77,6 +90,14 @@ public class GitHubService : IGitService
     /// </summary>
     public async Task<bool> CreateBranchAsync(string workspacePath, string branchName, string? baseBranch = null)
     {
+        // Validate inputs
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+        if (!InputValidator.IsValidBranchName(branchName))
+            throw new ValidationException("branchName", "Invalid branch name");
+        if (!string.IsNullOrWhiteSpace(baseBranch) && !InputValidator.IsValidBranchName(baseBranch))
+            throw new ValidationException("baseBranch", "Invalid base branch name");
+
         try
         {
             // If base branch is provided, ensure we're starting from it
@@ -123,7 +144,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to create branch: {ex.Message}");
+            _logger.Error(ex, "Failed to create branch {BranchName} in {WorkspacePath}", branchName, workspacePath);
             return false;
         }
     }
@@ -157,7 +178,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to get current branch: {ex.Message}");
+            _logger.Error(ex, "Failed to get current branch in {WorkspacePath}", workspacePath);
             return null;
         }
     }
@@ -167,6 +188,12 @@ public class GitHubService : IGitService
     /// </summary>
     public async Task<bool> CommitChangesAsync(string workspacePath, string message)
     {
+        // Validate inputs
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+        if (!InputValidator.IsValidCommitMessage(message))
+            throw new CommandInjectionException(message);
+
         try
         {
             // Stage all changes
@@ -190,11 +217,11 @@ public class GitHubService : IGitService
                     return false;
             }
 
-            // Commit
+            // Commit - Use EscapeGitArgument to prevent command injection
             var commitInfo = new ProcessStartInfo
             {
                 FileName = "git",
-                Arguments = $"commit -m \"{message}\"",
+                Arguments = $"commit -m {InputValidator.EscapeGitArgument(message)}",
                 WorkingDirectory = workspacePath,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -211,7 +238,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to commit changes: {ex.Message}");
+            _logger.Error(ex, "Failed to commit changes in {WorkspacePath} with message: {Message}", workspacePath, message);
             return false;
         }
     }
@@ -221,12 +248,18 @@ public class GitHubService : IGitService
     /// </summary>
     public async Task<bool> PushChangesAsync(string workspacePath, string branchName)
     {
+        // Validate inputs
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+        if (!InputValidator.IsValidBranchName(branchName))
+            throw new ValidationException("branchName", "Invalid branch name");
+
         try
         {
             var processInfo = new ProcessStartInfo
             {
                 FileName = "git",
-                Arguments = $"push -u origin {branchName}",
+                Arguments = $"push -u origin {InputValidator.EscapeGitArgument(branchName)}",
                 WorkingDirectory = workspacePath,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -243,7 +276,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to push changes: {ex.Message}");
+            _logger.Error(ex, "Failed to push changes in {WorkspacePath} for branch {BranchName}", workspacePath, branchName);
             return false;
         }
     }
@@ -275,7 +308,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to check git repository: {ex.Message}");
+            _logger.Error(ex, "Failed to check if {Path} is a git repository", path);
             return false;
         }
     }
@@ -307,7 +340,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to initialize repository: {ex.Message}");
+            _logger.Error(ex, "Failed to initialize repository at {Path}", workspacePath);
             return false;
         }
     }
@@ -341,7 +374,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to get repository root: {ex.Message}");
+            _logger.Error(ex, "Failed to get repository root for {Path}", path);
             return null;
         }
     }
@@ -373,7 +406,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to copy repository: {ex.Message}");
+            _logger.Error(ex, "Failed to copy repository from {SourcePath} to {TargetPath}", sourceRepoPath, targetPath);
             return false;
         }
     }
@@ -383,12 +416,18 @@ public class GitHubService : IGitService
     /// </summary>
     public async Task<bool> CheckoutBranchAsync(string workspacePath, string branchName)
     {
+        // Validate inputs
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+        if (!InputValidator.IsValidBranchName(branchName))
+            throw new ValidationException("branchName", "Invalid branch name");
+
         try
         {
             var processInfo = new ProcessStartInfo
             {
                 FileName = "git",
-                Arguments = $"checkout {branchName}",
+                Arguments = $"checkout {InputValidator.EscapeGitArgument(branchName)}",
                 WorkingDirectory = workspacePath,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -405,7 +444,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to checkout branch: {ex.Message}");
+            _logger.Error(ex, "Failed to checkout branch {BranchName} in {WorkspacePath}", branchName, workspacePath);
             return false;
         }
     }
@@ -451,7 +490,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to get branches: {ex.Message}");
+            _logger.Error(ex, "Failed to get branches in {WorkspacePath}", workspacePath);
             return Array.Empty<string>();
         }
     }
@@ -485,7 +524,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to get remote origin: {ex.Message}");
+            _logger.Error(ex, "Failed to get remote origin in {WorkspacePath}", workspacePath);
             return null;
         }
     }
@@ -519,7 +558,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to check for uncommitted changes: {ex.Message}");
+            _logger.Error(ex, "Failed to check for uncommitted changes in {WorkspacePath}", workspacePath);
             return false;
         }
     }
@@ -553,7 +592,7 @@ public class GitHubService : IGitService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to get last commit hash: {ex.Message}");
+            _logger.Error(ex, "Failed to get last commit hash in {WorkspacePath}", workspacePath);
             return null;
         }
     }
