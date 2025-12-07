@@ -10,6 +10,10 @@ Conductor와 유사한 Claude 병렬 작업 프로그램입니다. 여러 개의
 - **터미널 출력 표시**: Claude의 작업 과정을 실시간으로 터미널 출력으로 확인
 - **GitHub 연동**: 리포지토리 클론, 브랜치 관리, 커밋, 푸시
 - **파일 시스템 관리**: 워크스페이스 내 파일 읽기/쓰기/검색
+- **Conductor Scripts**: conductor.json 지원 (setup/run/archive 스크립트)
+- **Checkpoints**: 턴별 자동 스냅샷 및 되돌리기 기능
+- **Diff Viewer & PR 생성**: Git 변경사항 확인 및 원클릭 PR 생성
+- **상태 영속성**: 앱 재시작 시 워크스페이스 및 대화 히스토리 자동 복원
 
 ## 프로젝트 구조
 
@@ -55,6 +59,9 @@ guangzhou/
 - **MVVM**: Jinobald Framework + CommunityToolkit.Mvvm
 - **Claude Integration**: Claude Code CLI (프로세스 통신)
 - **Git**: System.Diagnostics.Process를 통한 Git 명령 실행
+- **Logging**: Serilog
+- **Validation**: FluentValidation
+- **Persistence**: JSON 기반 파일 저장
 
 ## 필수 요구사항
 
@@ -127,6 +134,11 @@ dotnet run --project src/Convalonia/Convalonia.csproj
 - **ClaudeCodeService**: Claude Code CLI와 프로세스 통신 (stdin/stdout)
 - **GitHubService**: Git 작업 (클론, 브랜치, 커밋, 푸시)
 - **FileSystemService**: 파일 읽기/쓰기/검색
+- **ConductorConfigService**: conductor.json 파싱 및 관리
+- **ScriptExecutor**: setup/run/archive 스크립트 실행
+- **CheckpointService**: Git refs 기반 체크포인트 관리
+- **WorkspacePersistenceService**: 워크스페이스 상태 저장/복원
+- **AgentPersistenceService**: 대화 히스토리 저장/복원
 
 ### ViewModels
 
@@ -151,15 +163,30 @@ dotnet run --project src/Convalonia/Convalonia.csproj
 - 각 워크스페이스는 독립적인 디렉토리와 Git 상태 유지
 - 워크스페이스당 여러 에이전트 동시 실행 가능
 
+## 완료된 기능 (Conductor 동등)
+
+- [x] ✅ 워크스페이스 병렬 관리
+- [x] ✅ Claude Code CLI 통합
+- [x] ✅ conductor.json Scripts 지원 (setup/run/archive)
+- [x] ✅ 환경 변수 시스템 (CONDUCTOR_WORKSPACE_PATH, PORT 등)
+- [x] ✅ Checkpoints 시스템 (턴별 스냅샷 및 되돌리기)
+- [x] ✅ Diff Viewer UI
+- [x] ✅ GitHub PR 생성 자동화
+- [x] ✅ 상태 영속성 (세션 복원)
+- [x] ✅ 포트 할당 시스템
+- [x] ✅ 보안 강화 (입력 검증, Command Injection 방어)
+- [x] ✅ DI 패턴 및 Factory 패턴
+- [x] ✅ 전역 예외 처리
+
 ## 향후 개선 사항
 
 - [ ] 터미널 출력 ANSI 색상 지원
 - [ ] 에이전트 간 작업 공유
-- [ ] PR 생성 자동화
-- [ ] 설정 UI (모델 선택, 워크스페이스 경로 등)
-- [ ] 워크스페이스 템플릿
-- [ ] 작업 기록 및 로그 저장
-- [ ] 세션 복원 기능
+- [ ] GitHub PR에서 워크스페이스 생성
+- [ ] 브랜치에서 워크스페이스 생성 (⌘⇧N)
+- [ ] Files 탭 완성 (변경 파일/전체 파일 트리)
+- [ ] Revert 확인 다이얼로그
+- [ ] 단위/통합 테스트 (커버리지 >70%)
 - [ ] 다중 언어 지원
 
 ## 라이선스

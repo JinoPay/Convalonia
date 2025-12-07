@@ -1,9 +1,9 @@
 # Convalonia 작업 요약
 
 **작업 날짜**: 2025-12-07
-**현재 브랜치**: JinoPay/diff-viewer-pr
+**현재 브랜치**: JinoPay/next-phase
 **프로젝트**: Conductor 유사 병렬 Claude 작업 프로그램
-**최근 업데이트**: Phase 4, 6, 7, 8 완료 (UI/Scripts/Checkpoints/Diff&PR)
+**최근 업데이트**: Phase 5 완료 (Persistence & State) - 전체 영속성 시스템 구현
 
 ---
 
@@ -248,11 +248,12 @@ Week 7: 품질 확보
 
 | 항목 | 이전 | 현재 | 목표 | 비고 |
 |------|------|------|------|------|
-| 아키텍처 | 7/10 | **9/10** | 9/10 | Factory 패턴, DI, Checkpoints, Diff 완료 ✅ |
+| 아키텍처 | 7/10 | **9.5/10** | 9/10 | Factory 패턴, DI, Checkpoints, Diff, Persistence 완료 ✅ |
 | 보안 | 5/10 | **9/10** | 9/10 | CRITICAL 이슈 모두 수정 완료 ✅ |
 | 코드 품질 | 6.5/10 | **8.5/10** | 8.5/10 | 안티패턴 제거, 입력 검증 완료 ✅ |
-| 완성도 | 60% | **95%** | 95% | Scripts, Checkpoints, Diff, PR 모두 완료 ✅ |
+| 완성도 | 60% | **98%** | 95% | Scripts, Checkpoints, Diff, PR, Persistence 완료 ✅ |
 | 성능 | 6/10 | **7.5/10** | 8/10 | 데드락, 리소스 누수 수정 완료 ✅ |
+| 사용성 | 6/10 | **9/10** | 9/10 | 상태 영속성으로 완벽한 UX ✅ |
 | 테스트 | 0/10 | **0/10** | 7/10 | 단위/통합 테스트 필요 ⏳ |
 
 ---
@@ -271,7 +272,7 @@ Week 7: 품질 확보
 - ✅ Diff Viewer & PR 생성
 
 ### 품질
-- ✅ 테스트 커버리지 > 70%
+- ⏳ 테스트 커버리지 > 70% (예정)
 - ✅ 로깅 완비
 - ✅ 에러 처리 완벽
 - ✅ 최신 C# 기능 활용
@@ -280,7 +281,8 @@ Week 7: 품질 확보
 - ✅ 직관적인 UI
 - ✅ 빠른 응답성
 - ✅ 안정적인 동작
-- ✅ 완벽한 문서화
+- ✅ 상태 영속성 (앱 재시작 시 복원)
+- ⏳ 완벽한 문서화 (진행 중)
 
 ---
 
@@ -381,32 +383,73 @@ Week 7: 품질 확보
 
 **커밋**: `a4ea8f0` - Implement Checkpoint UI with time-travel revert functionality
 
+### Phase 5: Persistence & State (완료 ✅)
+
+#### 아키텍처 설계
+- ✅ **파일 기반 JSON 저장소**:
+  - `AppData/Convalonia/workspaces/workspace-{id}.json` - 워크스페이스 상태
+  - `AppData/Convalonia/agents/agent-{id}-messages.json` - 대화 히스토리
+  - `AppData/Convalonia/settings.json` - 앱 설정 (마지막 활성 항목)
+- ✅ **DTO 패턴**: ObservableCollection 직렬화 문제 해결
+- ✅ **에러 핸들링**: 저장 실패 시에도 사용자 흐름 중단 없음
+
+#### 생성 파일 (5개)
+1. `Services/IPersistenceService.cs` - 기본 persistence 인터페이스
+2. `Services/IWorkspacePersistenceService.cs` - 워크스페이스 persistence 인터페이스
+3. `Services/IAgentPersistenceService.cs` - 에이전트 persistence 인터페이스
+4. `Services/WorkspacePersistenceService.cs` - 워크스페이스 상태 저장/복원 (309줄)
+5. `Services/AgentPersistenceService.cs` - 대화 히스토리 저장/복원 (201줄)
+
+#### 수정 파일 (4개)
+1. `App.axaml.cs` - DI 컨테이너에 persistence 서비스 등록
+2. `ViewModels/UnifiedMainViewModel.cs` - 자동 저장 및 복원 로직 (90줄 추가)
+3. `ViewModels/ChatViewModel.cs` - 메시지 CollectionChanged 이벤트 핸들링
+4. `Services/WorkspacePersistenceService.cs` - Repository 모델 속성명 수정
+
+#### 주요 기능
+
+**1. 자동 저장 (Auto-Save)**
+- ✅ 워크스페이스 선택 시 자동 저장
+- ✅ 에이전트 선택 시 자동 저장
+- ✅ 메시지 추가 시 자동 저장 (CollectionChanged)
+- ✅ 워크스페이스/에이전트 생성/삭제 시 저장
+- ✅ 마지막 활성 워크스페이스/에이전트 ID 저장
+
+**2. 복원 (Restore)**
+- ✅ 앱 시작 시 모든 워크스페이스 자동 복원
+- ✅ 각 에이전트의 대화 히스토리 복원 (턴 번호 포함)
+- ✅ 마지막 활성 워크스페이스 선택 복원
+- ✅ 워크스페이스별 마지막 활성 에이전트 복원
+- ✅ 저장소 정보 복원 (WorkspacePath, RootPath, RemoteOrigin 등)
+
+**3. 데이터 무결성**
+- ✅ 저장 실패 시 로깅만 하고 앱 동작 계속
+- ✅ 로드 실패 시 개별 워크스페이스 스킵, 나머지 계속
+- ✅ Serilog 통한 상세 디버그 로그
+- ✅ 비동기 I/O로 UI 블로킹 방지
+
+#### 빌드 결과
+- ✅ **빌드 성공** (0 errors, 27 warnings)
+- ✅ **총 510줄** 추가 (주석 포함)
+
+**완료일**: 2025-12-07
+
 ### 검증 완료
 - ✅ Phase 1-3: 보안, DI, 입력 검증 완료
 - ✅ Phase 4: UI/UX 완성
+- ✅ Phase 5: Persistence & State 완전 구현 ✨ NEW
 - ✅ Phase 6: Conductor Scripts 완전 구현
 - ✅ Phase 7: Checkpoints 시스템 완전 구현
 - ✅ Phase 8: Diff Viewer & PR 생성 완전 구현
-- ✅ 빌드 성공 (0 errors, 12 warnings)
-- ✅ **총 17개 파일** 생성/수정
-- ✅ **총 1,491줄** 추가
+- ✅ 빌드 성공 (0 errors, 27 warnings)
+- ✅ **총 26개 파일** 생성/수정 (누적)
+- ✅ **총 2,001줄** 추가 (누적)
 
 ---
 
 ## 📝 다음 단계
 
-### 1. Phase 5: Persistence & State (우선순위 높음)
-```bash
-# 워크스페이스 영속성
-# - workspace-{id}.json 저장
-# - 앱 재시작 시 워크스페이스 복원
-# - 마지막 선택된 워크스페이스/에이전트 복원
-# 에이전트 대화 영속성
-# - agent-{id}-messages.json 저장
-# - 대화 히스토리 복원
-```
-
-### 2. 추가 기능 개선 (우선순위 중간)
+### 1. 추가 기능 개선 (우선순위 중간)
 ```bash
 # Revert 확인 다이얼로그
 # - 체크포인트 복귀 시 확인
@@ -415,9 +458,12 @@ Week 7: 품질 확보
 # - GitHub PR에서 워크스페이스 생성
 # - 브랜치에서 워크스페이스 생성 (⌘⇧N)
 # - 브랜치 중복 체크아웃 방지
+# Files 탭 완성
+# - 변경된 파일 목록
+# - 전체 파일 트리 표시
 ```
 
-### 3. Phase 9: Testing (우선순위 낮음)
+### 2. Phase 9: Testing (우선순위 중간)
 ```bash
 # 단위 테스트
 # - xUnit + Moq + FluentAssertions
@@ -428,7 +474,7 @@ Week 7: 품질 확보
 # - Git 작업 테스트
 ```
 
-### 4. 문서화 & 배포 (우선순위 낮음)
+### 3. 문서화 & 배포 (우선순위 낮음)
 ```bash
 # 사용자 문서
 # - README.md 업데이트

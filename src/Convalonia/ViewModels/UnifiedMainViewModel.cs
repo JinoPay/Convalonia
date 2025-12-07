@@ -27,6 +27,8 @@ public partial class UnifiedMainViewModel : ViewModelBase
     private readonly IScriptExecutor _scriptExecutor;
     private readonly ICheckpointService _checkpointService;
     private readonly IGitService _gitService;
+    private readonly IWorkspacePersistenceService _workspacePersistence;
+    private readonly IAgentPersistenceService _agentPersistence;
     private readonly ILogger _logger = Log.ForContext<UnifiedMainViewModel>();
 
     [ObservableProperty]
@@ -76,7 +78,9 @@ public partial class UnifiedMainViewModel : ViewModelBase
         IScriptExecutor scriptExecutor,
         ICheckpointService checkpointService,
         IGitService gitService,
-        DiffViewerViewModel diffViewerViewModel)
+        DiffViewerViewModel diffViewerViewModel,
+        IWorkspacePersistenceService workspacePersistence,
+        IAgentPersistenceService agentPersistence)
     {
         _repositoryManagementService = repositoryManagementService;
         _workspaceService = workspaceService;
@@ -87,7 +91,169 @@ public partial class UnifiedMainViewModel : ViewModelBase
         _checkpointService = checkpointService;
         _gitService = gitService;
         _diffViewerViewModel = diffViewerViewModel;
+        _workspacePersistence = workspacePersistence;
+        _agentPersistence = agentPersistence;
         _repositories = _repositoryManagementService.Repositories;
+
+        // Initialize and restore state
+        _ = InitializeAsync();
+    }
+
+    /// <summary>
+    /// Initialize and restore persisted state
+    /// </summary>
+    private async Task InitializeAsync()
+    {
+        try
+        {
+            await RestoreWorkspacesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to restore workspaces on initialization");
+        }
+    }
+
+    /// <summary>
+    /// Restore workspaces from persistence
+    /// </summary>
+    private async Task RestoreWorkspacesAsync()
+    {
+        try
+        {
+            var workspaces = await _workspacePersistence.LoadAllWorkspacesAsync();
+
+            foreach (var workspace in workspaces)
+            {
+                // Find the corresponding repository
+                var repository = _repositories.FirstOrDefault(r =>
+                    r.Workspaces.Any(w => w.Id == workspace.Id));
+
+                if (repository != null)
+                {
+                    // Replace in-memory workspace with persisted one
+                    var existingWorkspace = repository.Workspaces.FirstOrDefault(w => w.Id == workspace.Id);
+                    if (existingWorkspace != null)
+                    {
+                        var index = repository.Workspaces.IndexOf(existingWorkspace);
+                        repository.Workspaces[index] = workspace;
+                    }
+                    else
+                    {
+                        repository.Workspaces.Add(workspace);
+                    }
+
+                    // Restore agent messages
+                    foreach (var agent in workspace.Agents)
+                    {
+                        var messages = await _agentPersistence.LoadAgentMessagesAsync(agent.Id);
+                        foreach (var message in messages)
+                        {
+                            agent.Messages.Add(message);
+                        }
+                    }
+                }
+            }
+
+            // Restore last active workspace
+            var lastActiveWorkspaceId = await _workspacePersistence.GetLastActiveWorkspaceAsync();
+            if (lastActiveWorkspaceId.HasValue)
+            {
+                var lastWorkspace = _repositories
+                    .SelectMany(r => r.Workspaces)
+                    .FirstOrDefault(w => w.Id == lastActiveWorkspaceId.Value);
+
+                if (lastWorkspace != null)
+                {
+                    SelectedWorkspace = lastWorkspace;
+
+                    // Restore last active agent
+                    var lastActiveAgentId = await _agentPersistence.GetLastActiveAgentAsync(lastActiveWorkspaceId.Value);
+                    if (lastActiveAgentId.HasValue)
+                    {
+                        SelectedAgent = lastWorkspace.Agents.FirstOrDefault(a => a.Id == lastActiveAgentId.Value);
+                    }
+                }
+            }
+
+            _logger.Information("Restored {Count} workspaces from persistence", workspaces.Count());
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to restore workspaces");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Save workspace state when property changes
+    /// </summary>
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+
+        // Save state when selection changes
+        if (e.PropertyName == nameof(SelectedWorkspace))
+        {
+            _ = SaveSelectedWorkspaceAsync();
+        }
+        else if (e.PropertyName == nameof(SelectedAgent))
+        {
+            _ = SaveSelectedAgentAsync();
+        }
+    }
+
+    /// <summary>
+    /// Save currently selected workspace
+    /// </summary>
+    private async Task SaveSelectedWorkspaceAsync()
+    {
+        if (SelectedWorkspace != null)
+        {
+            try
+            {
+                await _workspacePersistence.SaveWorkspaceAsync(SelectedWorkspace);
+                await _workspacePersistence.SaveLastActiveWorkspaceAsync(SelectedWorkspace.Id);
+                _logger.Debug("Auto-saved workspace: {WorkspaceId}", SelectedWorkspace.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to auto-save workspace {WorkspaceId}", SelectedWorkspace.Id);
+            }
+        }
+        else
+        {
+            try
+            {
+                await _workspacePersistence.SaveLastActiveWorkspaceAsync(null);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to clear last active workspace");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Save currently selected agent
+    /// </summary>
+    private async Task SaveSelectedAgentAsync()
+    {
+        if (SelectedWorkspace != null)
+        {
+            try
+            {
+                await _agentPersistence.SaveLastActiveAgentAsync(
+                    SelectedWorkspace.Id,
+                    SelectedAgent?.Id);
+                _logger.Debug("Auto-saved last active agent: {AgentId} for workspace {WorkspaceId}",
+                    SelectedAgent?.Id, SelectedWorkspace.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to auto-save last active agent");
+            }
+        }
     }
 
     /// <summary>
@@ -137,6 +303,9 @@ public partial class UnifiedMainViewModel : ViewModelBase
             var workspace = await _repositoryManagementService.CreateWorkspaceAsync(repository);
             _toastService.ShowSuccess($"워크스페이스 '{workspace.Name}' 생성됨");
 
+            // Save to persistence
+            await _workspacePersistence.SaveWorkspaceAsync(workspace);
+
             // Automatically select the newly created workspace
             SelectedWorkspace = workspace;
         }
@@ -179,6 +348,16 @@ public partial class UnifiedMainViewModel : ViewModelBase
         try
         {
             await _workspaceService.DeleteWorkspaceAsync(workspace.Id);
+
+            // Delete from persistence
+            await _workspacePersistence.DeleteWorkspaceAsync(workspace.Id);
+
+            // Delete all agent messages for this workspace
+            foreach (var agent in workspace.Agents)
+            {
+                await _agentPersistence.DeleteAgentMessagesAsync(agent.Id);
+            }
+
             _toastService.ShowSuccess($"워크스페이스 '{workspace.Name}' 삭제됨");
 
             if (SelectedWorkspace?.Id == workspace.Id)
@@ -214,6 +393,10 @@ public partial class UnifiedMainViewModel : ViewModelBase
             };
 
             SelectedWorkspace.Agents.Add(agent);
+
+            // Save workspace with new agent
+            await _workspacePersistence.SaveWorkspaceAsync(SelectedWorkspace);
+
             _toastService.ShowSuccess($"새 채팅 '{agent.Name}' 생성됨");
 
             // Automatically select the new agent
@@ -223,8 +406,6 @@ public partial class UnifiedMainViewModel : ViewModelBase
         {
             _toastService.ShowError($"채팅 생성 실패: {ex.Message}");
         }
-
-        await Task.CompletedTask;
     }
 
     /// <summary>
@@ -247,6 +428,13 @@ public partial class UnifiedMainViewModel : ViewModelBase
         try
         {
             SelectedWorkspace.Agents.Remove(agent);
+
+            // Delete agent messages from persistence
+            await _agentPersistence.DeleteAgentMessagesAsync(agent.Id);
+
+            // Save workspace
+            await _workspacePersistence.SaveWorkspaceAsync(SelectedWorkspace);
+
             _toastService.ShowSuccess($"채팅 '{agent.Name}' 삭제됨");
 
             if (SelectedAgent?.Id == agent.Id)
@@ -258,8 +446,6 @@ public partial class UnifiedMainViewModel : ViewModelBase
         {
             _toastService.ShowError($"채팅 삭제 실패: {ex.Message}");
         }
-
-        await Task.CompletedTask;
     }
 
     /// <summary>
@@ -571,7 +757,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
 
         if (value != null && SelectedWorkspace != null)
         {
-            var chatViewModel = new ChatViewModel(value, SelectedWorkspace, _toastService, _claudeCodeServiceFactory, _checkpointService);
+            var chatViewModel = new ChatViewModel(value, SelectedWorkspace, _toastService, _claudeCodeServiceFactory, _checkpointService, _agentPersistence);
             chatViewModel.FirstMessageSent += OnFirstMessageSent;
             SelectedAgentChatViewModel = chatViewModel;
         }

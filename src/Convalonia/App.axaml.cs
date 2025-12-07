@@ -86,6 +86,10 @@ public partial class App : ApplicationBase<MainWindow>
         containerRegistry.RegisterSingleton<IScriptExecutor, ScriptExecutor>();
         containerRegistry.RegisterSingleton<ICheckpointService, CheckpointService>();
 
+        // Register Persistence services
+        containerRegistry.RegisterSingleton<IWorkspacePersistenceService, WorkspacePersistenceService>();
+        containerRegistry.RegisterSingleton<IAgentPersistenceService, AgentPersistenceService>();
+
         // Also register concrete types for backwards compatibility
         containerRegistry.RegisterSingleton<GitHubService>();
         containerRegistry.RegisterSingleton<WorkspaceService>();
