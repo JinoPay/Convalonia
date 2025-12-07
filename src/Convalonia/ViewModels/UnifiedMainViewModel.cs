@@ -281,23 +281,31 @@ public partial class UnifiedMainViewModel : ViewModelBase
 
     private async void OnFirstMessageSent(object? sender, string firstMessage)
     {
-        if (SelectedWorkspace == null) return;
-
-        // Suggest a name based on the message
-        var suggestedName = WorkspaceNameSuggestionService.SuggestName(firstMessage);
-
-        if (suggestedName == null) return;
-
-        // Check if we should rename (only if current name is random)
-        if (!WorkspaceNameSuggestionService.ShouldRename(SelectedWorkspace.Name, suggestedName))
-            return;
-
-        // Attempt to rename
-        var success = await _workspaceService.RenameWorkspaceAsync(SelectedWorkspace.Id, suggestedName);
-
-        if (success)
+        try
         {
-            _toastService.ShowInfo($"워크스페이스 이름이 '{suggestedName}'으로 변경됨");
+            if (SelectedWorkspace == null) return;
+
+            // Suggest a name based on the message
+            var suggestedName = WorkspaceNameSuggestionService.SuggestName(firstMessage);
+
+            if (suggestedName == null) return;
+
+            // Check if we should rename (only if current name is random)
+            if (!WorkspaceNameSuggestionService.ShouldRename(SelectedWorkspace.Name, suggestedName))
+                return;
+
+            // Attempt to rename
+            var success = await _workspaceService.RenameWorkspaceAsync(SelectedWorkspace.Id, suggestedName);
+
+            if (success)
+            {
+                _toastService.ShowInfo($"워크스페이스 이름이 '{suggestedName}'으로 변경됨");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in OnFirstMessageSent: {ex.Message}");
+            _toastService.ShowError($"워크스페이스 이름 변경 실패: {ex.Message}");
         }
     }
 }

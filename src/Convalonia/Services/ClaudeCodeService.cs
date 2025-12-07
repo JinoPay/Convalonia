@@ -16,11 +16,22 @@ public class ClaudeCodeService : IDisposable
     private readonly string _workingDirectory;
     private readonly StringBuilder _outputBuffer = new();
     private readonly StringBuilder _errorBuffer = new();
+    private readonly object _processLock = new();
+    private bool _isDisposed;
 
     public event EventHandler<string>? OutputReceived;
     public event EventHandler<string>? ErrorReceived;
 
-    public bool IsRunning => _process != null && !_process.HasExited;
+    public bool IsRunning
+    {
+        get
+        {
+            lock (_processLock)
+            {
+                return _process != null && !_process.HasExited;
+            }
+        }
+    }
 
     public ClaudeCodeService(string workingDirectory)
     {
@@ -61,11 +72,20 @@ public class ClaudeCodeService : IDisposable
     /// </summary>
     public async Task<bool> StartSessionAsync()
     {
-        if (IsRunning)
+        if (_isDisposed)
         {
-            return true;
+            throw new ObjectDisposedException(nameof(ClaudeCodeService));
         }
 
+        lock (_processLock)
+        {
+            if (_process != null && !_process.HasExited)
+            {
+                return true;
+            }
+        }
+
+        Process? newProcess = null;
         try
         {
             var processInfo = new ProcessStartInfo
@@ -82,15 +102,21 @@ public class ClaudeCodeService : IDisposable
                 StandardErrorEncoding = Encoding.UTF8
             };
 
-            _process = new Process { StartInfo = processInfo };
+            newProcess = new Process { StartInfo = processInfo };
 
             // Setup output/error handlers
-            _process.OutputDataReceived += OnOutputDataReceived;
-            _process.ErrorDataReceived += OnErrorDataReceived;
+            newProcess.OutputDataReceived += OnOutputDataReceived;
+            newProcess.ErrorDataReceived += OnErrorDataReceived;
 
-            _process.Start();
-            _process.BeginOutputReadLine();
-            _process.BeginErrorReadLine();
+            newProcess.Start();
+            newProcess.BeginOutputReadLine();
+            newProcess.BeginErrorReadLine();
+
+            lock (_processLock)
+            {
+                _process = newProcess;
+                newProcess = null; // Ownership transferred
+            }
 
             await Task.Delay(500); // Give it time to initialize
 
@@ -99,6 +125,7 @@ public class ClaudeCodeService : IDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to start Claude Code: {ex.Message}");
+            newProcess?.Dispose();
             return false;
         }
     }
@@ -168,32 +195,45 @@ public class ClaudeCodeService : IDisposable
     /// </summary>
     public async Task StopSessionAsync()
     {
-        if (_process == null || _process.HasExited)
+        Process? processToDispose = null;
+
+        lock (_processLock)
         {
-            return;
+            if (_process == null || _process.HasExited)
+            {
+                return;
+            }
+            processToDispose = _process;
+            _process = null;
         }
 
         try
         {
             // Send exit command
-            if (_process.StandardInput != null)
+            if (processToDispose.StandardInput != null)
             {
-                await _process.StandardInput.WriteLineAsync("/exit");
-                await _process.StandardInput.FlushAsync();
+                await processToDispose.StandardInput.WriteLineAsync("/exit");
+                await processToDispose.StandardInput.FlushAsync();
             }
 
             // Wait for graceful exit
-            if (!_process.WaitForExit(3000))
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            try
             {
-                _process.Kill();
+                await processToDispose.WaitForExitAsync(cts.Token);
             }
-
-            _process.Dispose();
-            _process = null;
+            catch (OperationCanceledException)
+            {
+                processToDispose.Kill(entireProcessTree: true);
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error stopping Claude Code: {ex.Message}");
+        }
+        finally
+        {
+            processToDispose.Dispose();
         }
     }
 
@@ -223,6 +263,33 @@ public class ClaudeCodeService : IDisposable
 
     public void Dispose()
     {
-        StopSessionAsync().Wait();
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_isDisposed) return;
+
+        if (disposing)
+        {
+            // Synchronously stop the session - avoid deadlock by using GetAwaiter().GetResult()
+            // in a try block to handle any exceptions
+            try
+            {
+                StopSessionAsync().GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during dispose: {ex.Message}");
+            }
+        }
+
+        _isDisposed = true;
+    }
+
+    ~ClaudeCodeService()
+    {
+        Dispose(disposing: false);
     }
 }

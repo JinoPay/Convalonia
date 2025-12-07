@@ -634,10 +634,20 @@ Week 6: Phase 10 (Documentation) + 최종 테스트
 
 ## 🎯 즉시 시작할 작업
 
+### Phase 1 (완료)
 1. ✅ Command Injection 수정 (GitHubService.cs)
 2. ✅ Path Traversal 수정 (FileSystemService.cs)
 3. ✅ Deadlock 수정 (RepositoryManagementService.cs)
 4. ✅ Deadlock 수정 (ClaudeCodeService.cs)
 5. ✅ AgentSelectionConverter 추가 (UnifiedMainView.axaml)
 
-**다음 단계**: Phase 1 완료 후 Phase 2 HIGH Priority 작업 시작
+### Phase 2 (진행 중)
+6. ✅ Process 리소스 누수 수정 (ClaudeCodeService.cs) - 스레드 안전성, Dispose 패턴 개선
+7. ✅ HttpClient 안티패턴 수정 (IClaudeApiService 인터페이스 추가)
+8. ✅ async void 이벤트 핸들러 수정 (try-catch 추가)
+9. ✅ DI 인터페이스 추가 (IGitService, IWorkspaceService, IRepositoryService 등)
+10. ✅ 전역 예외 처리 추가 (App.axaml.cs)
+11. ⏳ 입력 검증 추가 (URL, 경로, 브랜치명)
+12. ⏳ Serilog 로깅 도입
+
+**다음 단계**: Phase 2 완료 후 Phase 3 Architecture Refactoring 시작

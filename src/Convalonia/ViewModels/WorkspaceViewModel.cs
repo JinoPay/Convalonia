@@ -122,7 +122,15 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
 
     private async void OnFirstMessageSent(object? sender, string firstMessage)
     {
-        await TryAutoRenameWorkspaceAsync(firstMessage);
+        try
+        {
+            await TryAutoRenameWorkspaceAsync(firstMessage);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in OnFirstMessageSent: {ex.Message}");
+            _toastService.ShowError($"워크스페이스 이름 변경 실패: {ex.Message}");
+        }
     }
 
     [RelayCommand]
