@@ -14,6 +14,7 @@ public class Message
     public string? ToolName { get; set; }
     public string? ToolInput { get; set; }
     public string? ToolOutput { get; set; }
+    public int TurnNumber { get; set; }
 }
 
 public enum MessageRole

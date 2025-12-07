@@ -31,4 +31,14 @@ public interface IGitService
     Task DeleteRefAsync(string workspacePath, string refName);
     Task ResetHardAsync(string workspacePath, string commitSha);
     Task<bool> CommitAllChangesAsync(string workspacePath, string message, bool skipHooks = false);
+
+    // Diff operations
+    Task<string> GetDiffAsync(string workspacePath, string? compareSpec = null);
+    Task<string[]> GetChangedFilesAsync(string workspacePath, bool includeUntracked = true);
+    Task<string> GetFileDiffAsync(string workspacePath, string filePath);
+
+    // Pull Request operations
+    Task<bool> PushBranchAsync(string workspacePath, string branchName, bool setUpstream = true);
+    Task<string?> CreatePullRequestAsync(string workspacePath, string title, string body, string baseBranch = "main");
+    Task<string?> GetCurrentRemoteUrlAsync(string workspacePath);
 }

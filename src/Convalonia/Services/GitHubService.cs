@@ -956,4 +956,307 @@ public class GitHubService : IGitService
     }
 
     #endregion
+
+    #region Diff Operations
+
+    /// <summary>
+    /// Gets the diff for the workspace
+    /// </summary>
+    /// <param name="workspacePath">Workspace path</param>
+    /// <param name="compareSpec">Optional compare spec (e.g., "main...HEAD", "HEAD~1", etc.)</param>
+    /// <returns>Diff output</returns>
+    public async Task<string> GetDiffAsync(string workspacePath, string? compareSpec = null)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var arguments = string.IsNullOrWhiteSpace(compareSpec)
+                ? "diff HEAD"
+                : $"diff {InputValidator.EscapeGitArgument(compareSpec)}";
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return string.Empty;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0 ? output : string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get diff in {WorkspacePath}", workspacePath);
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Gets list of changed files in the workspace
+    /// </summary>
+    /// <param name="workspacePath">Workspace path</param>
+    /// <param name="includeUntracked">Whether to include untracked files</param>
+    /// <returns>Array of file paths</returns>
+    public async Task<string[]> GetChangedFilesAsync(string workspacePath, bool includeUntracked = true)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var arguments = includeUntracked
+                ? "status --porcelain"
+                : "status --porcelain --untracked-files=no";
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return Array.Empty<string>();
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+                return Array.Empty<string>();
+
+            // Parse git status output (format: "XY filename")
+            return output
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Length > 3 ? line[3..].Trim() : string.Empty)
+                .Where(file => !string.IsNullOrWhiteSpace(file))
+                .ToArray();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get changed files in {WorkspacePath}", workspacePath);
+            return Array.Empty<string>();
+        }
+    }
+
+    /// <summary>
+    /// Gets diff for a specific file
+    /// </summary>
+    /// <param name="workspacePath">Workspace path</param>
+    /// <param name="filePath">Relative file path</param>
+    /// <returns>File diff output</returns>
+    public async Task<string> GetFileDiffAsync(string workspacePath, string filePath)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+        if (string.IsNullOrWhiteSpace(filePath))
+            throw new ValidationException("filePath", "File path cannot be empty");
+
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"diff HEAD -- {InputValidator.EscapeGitArgument(filePath)}",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return string.Empty;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0 ? output : string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get diff for file {FilePath} in {WorkspacePath}", filePath, workspacePath);
+            return string.Empty;
+        }
+    }
+
+    #endregion
+
+    #region Pull Request Operations
+
+    /// <summary>
+    /// Pushes the current branch to remote
+    /// </summary>
+    /// <param name="workspacePath">Workspace path</param>
+    /// <param name="branchName">Branch name to push</param>
+    /// <param name="setUpstream">Whether to set upstream (-u flag)</param>
+    /// <returns>True if push succeeded</returns>
+    public async Task<bool> PushBranchAsync(string workspacePath, string branchName, bool setUpstream = true)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+        if (!InputValidator.IsValidBranchName(branchName))
+            throw new ValidationException("branchName", "Invalid branch name");
+
+        try
+        {
+            var arguments = setUpstream
+                ? $"push -u origin {InputValidator.EscapeGitArgument(branchName)}"
+                : $"push origin {InputValidator.EscapeGitArgument(branchName)}";
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return false;
+
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                var error = await process.StandardError.ReadToEndAsync();
+                _logger.Warning("Failed to push branch {BranchName}: {Error}", branchName, error);
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to push branch {BranchName} in {WorkspacePath}", branchName, workspacePath);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Creates a pull request using GitHub CLI (gh)
+    /// </summary>
+    /// <param name="workspacePath">Workspace path</param>
+    /// <param name="title">PR title</param>
+    /// <param name="body">PR body/description</param>
+    /// <param name="baseBranch">Base branch (default: main)</param>
+    /// <returns>PR URL if successful, null otherwise</returns>
+    public async Task<string?> CreatePullRequestAsync(string workspacePath, string title, string body, string baseBranch = "main")
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ValidationException("title", "PR title cannot be empty");
+        if (!InputValidator.IsValidBranchName(baseBranch))
+            throw new ValidationException("baseBranch", "Invalid base branch name");
+
+        try
+        {
+            // Build gh pr create command
+            var arguments = $"pr create --base {InputValidator.EscapeGitArgument(baseBranch)} " +
+                          $"--title {InputValidator.EscapeGitArgument(title)} " +
+                          $"--body {InputValidator.EscapeGitArgument(body)}";
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "gh",
+                Arguments = arguments,
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+            {
+                _logger.Error("Failed to start gh process");
+                return null;
+            }
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                _logger.Error("Failed to create PR: {Error}", error);
+                return null;
+            }
+
+            // Extract PR URL from output (gh outputs the URL)
+            var prUrl = output.Trim().Split('\n').LastOrDefault()?.Trim();
+            _logger.Information("Created PR: {PrUrl}", prUrl);
+
+            return prUrl;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to create pull request in {WorkspacePath}", workspacePath);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the current remote URL
+    /// </summary>
+    /// <param name="workspacePath">Workspace path</param>
+    /// <returns>Remote URL or null</returns>
+    public async Task<string?> GetCurrentRemoteUrlAsync(string workspacePath)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "remote get-url origin",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return null;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0 ? output.Trim() : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get remote URL in {WorkspacePath}", workspacePath);
+            return null;
+        }
+    }
+
+    #endregion
 }

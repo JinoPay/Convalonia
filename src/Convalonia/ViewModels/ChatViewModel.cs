@@ -119,7 +119,8 @@ public partial class ChatViewModel : ViewModelBase
                 Id = Guid.NewGuid(),
                 Role = MessageRole.User,
                 Content = InputMessage,
-                Timestamp = DateTime.Now
+                Timestamp = DateTime.Now,
+                TurnNumber = _currentTurn
             };
 
             _messages.Add(userMessage);
@@ -287,5 +288,68 @@ public partial class ChatViewModel : ViewModelBase
             AgentStatus.Error => "Error",
             _ => "Unknown"
         };
+    }
+
+    /// <summary>
+    /// Reverts to a specific checkpoint (turn)
+    /// </summary>
+    [RelayCommand]
+    private async Task RevertToCheckpointAsync(int turnNumber)
+    {
+        if (_checkpointService == null)
+        {
+            _toastService.ShowWarning("Checkpoint service not available");
+            return;
+        }
+
+        try
+        {
+            // Get the checkpoint for this turn
+            var checkpoints = await _checkpointService.GetCheckpointsAsync(_agent.Id);
+            var checkpoint = checkpoints.FirstOrDefault(c => c.TurnNumber == turnNumber);
+
+            if (checkpoint == null)
+            {
+                _toastService.ShowWarning($"Checkpoint for turn {turnNumber} not found");
+                return;
+            }
+
+            // Confirm with user
+            var confirmed = true; // TODO: Add confirmation dialog
+            if (!confirmed)
+                return;
+
+            _toastService.ShowInfo($"Reverting to turn {turnNumber}...");
+
+            // Revert to checkpoint
+            await _checkpointService.RevertToCheckpointAsync(checkpoint, _workspace, _agent);
+
+            // Remove messages after the checkpoint
+            var messagesToRemove = Messages
+                .Where((m, index) => index >= turnNumber * 2) // Each turn has 2 messages (user + assistant)
+                .ToList();
+
+            foreach (var message in messagesToRemove)
+            {
+                Messages.Remove(message);
+            }
+
+            // Update current turn
+            _currentTurn = turnNumber;
+
+            _toastService.ShowSuccess($"Reverted to turn {turnNumber}");
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowError($"Failed to revert: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Checks if a checkpoint can be reverted to
+    /// </summary>
+    private bool CanRevertToCheckpoint(int turnNumber)
+    {
+        return turnNumber < _currentTurn && !IsSending;
     }
 }
