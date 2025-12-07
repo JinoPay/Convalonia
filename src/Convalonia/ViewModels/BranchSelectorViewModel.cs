@@ -2,40 +2,39 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Models;
 using Convalonia.Services;
-using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Toast;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Convalonia.ViewModels;
 
 /// <summary>
 /// ViewModel for selecting and searching branches
 /// </summary>
-public partial class BranchSelectorViewModel : ViewModelBase
+public partial class BranchSelectorViewModel : ReactiveObject
 {
     private readonly Repository _repository;
     private readonly RepositoryService _repositoryService;
     private readonly IToastService _toastService;
 
-    [ObservableProperty]
+    [Reactive]
     private ObservableCollection<string> _branches = new();
 
-    [ObservableProperty]
+    [Reactive]
     private ObservableCollection<string> _filteredBranches = new();
 
-    [ObservableProperty]
+    [Reactive]
     private string? _selectedBranch;
 
-    [ObservableProperty]
+    [Reactive]
     private string _searchQuery = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _includeArchived = false;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isLoading = false;
 
     public BranchSelectorViewModel(
@@ -48,21 +47,21 @@ public partial class BranchSelectorViewModel : ViewModelBase
         _toastService = toastService;
         _includeArchived = repository.SearchArchivedBranches;
 
+        // Subscribe to property changes
+        this.WhenAnyValue(x => x.SearchQuery)
+            .Subscribe(_ => FilterBranches());
+
+        this.WhenAnyValue(x => x.IncludeArchived)
+            .Subscribe(value =>
+            {
+                _repository.SearchArchivedBranches = value;
+                _ = LoadBranchesAsync();
+            });
+
         _ = LoadBranchesAsync();
     }
 
-    partial void OnSearchQueryChanged(string value)
-    {
-        FilterBranches();
-    }
-
-    partial void OnIncludeArchivedChanged(bool value)
-    {
-        _repository.SearchArchivedBranches = value;
-        _ = LoadBranchesAsync();
-    }
-
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task LoadBranchesAsync()
     {
         IsLoading = true;
@@ -89,7 +88,7 @@ public partial class BranchSelectorViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CheckoutBranchAsync()
     {
         if (string.IsNullOrWhiteSpace(SelectedBranch))
@@ -123,7 +122,7 @@ public partial class BranchSelectorViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreateNewBranchAsync(string branchName)
     {
         if (string.IsNullOrWhiteSpace(branchName))

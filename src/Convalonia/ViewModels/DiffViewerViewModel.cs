@@ -1,13 +1,13 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Models;
 using Convalonia.Services;
-using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Toast;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 using Serilog;
 
 namespace Convalonia.ViewModels;
@@ -15,39 +15,28 @@ namespace Convalonia.ViewModels;
 /// <summary>
 /// ViewModel for displaying Git diffs
 /// </summary>
-public partial class DiffViewerViewModel : ViewModelBase
+public partial class DiffViewerViewModel : ReactiveObject
 {
     private readonly IGitService _gitService;
     private readonly IToastService _toastService;
     private readonly ILogger _logger = Log.ForContext<DiffViewerViewModel>();
 
-    [ObservableProperty]
+    [Reactive]
     private ObservableCollection<FileDiff> _changedFiles = new();
 
-    [ObservableProperty]
+    [Reactive]
     private FileDiff? _selectedFile;
 
-    [ObservableProperty]
+    [Reactive]
     private Workspace? _workspace;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isLoading;
 
-    [ObservableProperty]
+    [Reactive]
     private string _diffSummary = string.Empty;
 
-    public DiffViewerViewModel(
-        IGitService gitService,
-        IToastService toastService)
-    {
-        _gitService = gitService;
-        _toastService = toastService;
-    }
-
-    /// <summary>
-    /// Loads diffs for the current workspace
-    /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task LoadDiffsAsync()
     {
         if (Workspace == null)
@@ -135,13 +124,18 @@ public partial class DiffViewerViewModel : ViewModelBase
         }
     }
 
-    /// <summary>
-    /// Refreshes the diff view
-    /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     public async Task RefreshAsync()
     {
         await LoadDiffsAsync();
+    }
+
+    public DiffViewerViewModel(
+        IGitService gitService,
+        IToastService toastService)
+    {
+        _gitService = gitService;
+        _toastService = toastService;
     }
 
     /// <summary>
