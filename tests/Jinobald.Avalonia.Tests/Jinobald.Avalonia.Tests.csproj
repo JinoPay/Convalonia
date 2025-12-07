@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Jinobald.Avalonia\Jinobald.Avalonia.csproj" />
+    <ProjectReference Include="..\..\libs\Jinobald.Avalonia\Jinobald.Avalonia.csproj" />
   </ItemGroup>
 
 </Project>
