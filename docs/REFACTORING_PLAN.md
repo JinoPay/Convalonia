@@ -655,4 +655,24 @@ Week 6: Phase 10 (Documentation) + 최종 테스트
 14. ✅ ClaudeCodeService.IsRunning 스레드 안전성 (이미 구현되어 있음)
 15. ✅ Factory 패턴을 통한 결합도 개선 (3개 ViewModel 수정)
 
-**다음 단계**: Phase 4 UI/UX Completion 또는 Phase 6 Conductor Scripts 구현
+### Phase 4 (완료 ✅)
+23. ✅ AI 모델 선택 연결 - ComboBox → Agent.Model 바인딩
+24. ✅ Run 버튼 구현 - conductor.json run 스크립트 실행
+25. ✅ Terminal 버튼 구현 - 터미널 패널 토글
+26-35. ⏳ Files 탭, 자동 스크롤, 로딩 표시 등 (일부 미구현)
+
+### Phase 6 (완료 ✅)
+39. ✅ conductor.json 파싱 - ConductorConfig, ConductorScripts 모델
+40. ✅ Setup Script 실행 - 워크스페이스 생성 시
+41. ✅ Run Script 실행 - nonconcurrent 모드 지원
+42. ✅ Archive Script 실행 - 워크스페이스 삭제 시
+43. ✅ 포트 할당 시스템 - 워크스페이스당 10개 포트
+44-46. ⏳ ANSI 색상, 템플릿, 히스토리 로깅 (미구현)
+
+### Phase 7 (완료 ✅)
+47. ✅ Checkpoint 시스템 설계 - Checkpoint 모델
+48. ✅ Private Git Ref 저장 - refs/conductor/checkpoints/...
+49. ✅ Checkpoint 되돌리기 - RevertToCheckpointAsync
+50. ⏳ Checkpoint UI - ChatView Revert 버튼 (미구현)
+
+**다음 단계**: Phase 8 Diff Viewer & PR 생성 또는 Checkpoint UI 추가
