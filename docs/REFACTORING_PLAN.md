@@ -673,6 +673,21 @@ Week 6: Phase 10 (Documentation) + 최종 테스트
 47. ✅ Checkpoint 시스템 설계 - Checkpoint 모델
 48. ✅ Private Git Ref 저장 - refs/conductor/checkpoints/...
 49. ✅ Checkpoint 되돌리기 - RevertToCheckpointAsync
-50. ⏳ Checkpoint UI - ChatView Revert 버튼 (미구현)
+50. ✅ Checkpoint UI - ChatView Revert 버튼 (완료)
 
-**다음 단계**: Phase 8 Diff Viewer & PR 생성 또는 Checkpoint UI 추가
+### Phase 8 (완료 ✅)
+51. ✅ Diff Viewer UI - FileDiff 모델, DiffParser, DiffViewerViewModel
+52. ✅ GitHub PR 생성 자동화 - 원클릭 PR 생성 워크플로우
+53. ⏳ Agent 간 작업 공유 - AgentTaskSharingService (미구현)
+
+### Phase 5 (완료 ✅) - Persistence & State
+36. ✅ 워크스페이스 영속성 - workspace-{id}.json 저장/복원
+37. ✅ 에이전트 대화 영속성 - agent-{id}-messages.json 저장/복원
+38. ✅ 세션 복원 - 마지막 활성 워크스페이스/에이전트 복원
+- ✅ WorkspacePersistenceService 구현 (309줄)
+- ✅ AgentPersistenceService 구현 (201줄)
+- ✅ 자동 저장 시스템 (PropertyChanged, CollectionChanged)
+- ✅ 앱 시작 시 자동 복원
+- ✅ DTO 패턴으로 직렬화 문제 해결
+
+**다음 단계**: Phase 9 Testing 또는 추가 기능 개선

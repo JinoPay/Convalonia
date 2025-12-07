@@ -22,6 +22,7 @@ public partial class ChatViewModel : ViewModelBase
     private readonly ClaudeCodeService _claudeCodeService;
     private readonly IToastService _toastService;
     private readonly ICheckpointService? _checkpointService;
+    private readonly IAgentPersistenceService? _agentPersistence;
     private readonly string _workspacePath;
     private CancellationTokenSource? _cancellationTokenSource;
     private bool _isFirstMessage = true;
@@ -67,7 +68,8 @@ public partial class ChatViewModel : ViewModelBase
         Workspace workspace,
         IToastService toastService,
         IClaudeCodeServiceFactory claudeCodeServiceFactory,
-        ICheckpointService? checkpointService = null)
+        ICheckpointService? checkpointService = null,
+        IAgentPersistenceService? agentPersistence = null)
     {
         _agent = agent;
         _workspace = workspace;
@@ -75,6 +77,7 @@ public partial class ChatViewModel : ViewModelBase
         _toastService = toastService;
         _claudeCodeService = claudeCodeServiceFactory.Create(workspace.Path);
         _checkpointService = checkpointService;
+        _agentPersistence = agentPersistence;
 
         // Subscribe to terminal output
         _claudeCodeService.OutputReceived += OnOutputReceived;
@@ -84,7 +87,29 @@ public partial class ChatViewModel : ViewModelBase
         _agentName = agent.Name;
         _agentStatus = agent.Status;
 
+        // Subscribe to message changes for auto-save
+        _messages.CollectionChanged += OnMessagesCollectionChanged;
+
         UpdateStatusText();
+    }
+
+    /// <summary>
+    /// Auto-save messages when collection changes
+    /// </summary>
+    private async void OnMessagesCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (_agentPersistence != null)
+        {
+            try
+            {
+                await _agentPersistence.SaveAgentMessagesAsync(_agent);
+            }
+            catch (Exception ex)
+            {
+                // Log but don't interrupt user flow
+                System.Diagnostics.Debug.WriteLine($"Failed to auto-save messages: {ex.Message}");
+            }
+        }
     }
 
     [RelayCommand]
