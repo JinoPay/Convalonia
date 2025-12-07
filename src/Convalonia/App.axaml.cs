@@ -87,6 +87,7 @@ public partial class App : ApplicationBase<MainWindow>
         containerRegistry.RegisterSingleton<IConductorConfigService, ConductorConfigService>();
         containerRegistry.RegisterSingleton<IPortAllocator, PortAllocator>();
         containerRegistry.RegisterSingleton<IScriptExecutor, ScriptExecutor>();
+        containerRegistry.RegisterSingleton<ICheckpointService, CheckpointService>();
 
         // Also register concrete types for backwards compatibility
         containerRegistry.RegisterSingleton<GitHubService>();

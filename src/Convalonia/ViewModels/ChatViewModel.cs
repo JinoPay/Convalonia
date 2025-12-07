@@ -18,11 +18,14 @@ namespace Convalonia.ViewModels;
 public partial class ChatViewModel : ViewModelBase
 {
     private readonly Agent _agent;
+    private readonly Workspace _workspace;
     private readonly ClaudeCodeService _claudeCodeService;
     private readonly IToastService _toastService;
+    private readonly ICheckpointService? _checkpointService;
     private readonly string _workspacePath;
     private CancellationTokenSource? _cancellationTokenSource;
     private bool _isFirstMessage = true;
+    private int _currentTurn = 0;
 
     [ObservableProperty]
     private ObservableCollection<Message> _messages;
@@ -61,14 +64,17 @@ public partial class ChatViewModel : ViewModelBase
 
     public ChatViewModel(
         Agent agent,
-        string workspacePath,
+        Workspace workspace,
         IToastService toastService,
-        IClaudeCodeServiceFactory claudeCodeServiceFactory)
+        IClaudeCodeServiceFactory claudeCodeServiceFactory,
+        ICheckpointService? checkpointService = null)
     {
         _agent = agent;
-        _workspacePath = workspacePath;
+        _workspace = workspace;
+        _workspacePath = workspace.Path;
         _toastService = toastService;
-        _claudeCodeService = claudeCodeServiceFactory.Create(workspacePath);
+        _claudeCodeService = claudeCodeServiceFactory.Create(workspace.Path);
+        _checkpointService = checkpointService;
 
         // Subscribe to terminal output
         _claudeCodeService.OutputReceived += OnOutputReceived;
@@ -146,6 +152,32 @@ public partial class ChatViewModel : ViewModelBase
 
             // Wait a bit for response to accumulate
             await Task.Delay(1000, _cancellationTokenSource.Token);
+
+            // Create checkpoint after successful turn
+            if (_checkpointService != null)
+            {
+                try
+                {
+                    // Get the last assistant message
+                    var assistantMessage = _messages.LastOrDefault(m => m.Role == MessageRole.Assistant);
+                    var assistantContent = assistantMessage?.Content ?? string.Empty;
+
+                    await _checkpointService.CreateCheckpointAsync(
+                        _workspace,
+                        _agent,
+                        _currentTurn,
+                        userInput,
+                        assistantContent,
+                        _cancellationTokenSource.Token);
+
+                    _currentTurn++;
+                }
+                catch (Exception ex)
+                {
+                    // Don't fail the whole operation if checkpoint fails
+                    _toastService.ShowWarning($"Checkpoint creation failed: {ex.Message}");
+                }
+            }
 
             // Update agent status
             _agent.Status = AgentStatus.Idle;

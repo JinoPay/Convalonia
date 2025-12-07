@@ -24,6 +24,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     private readonly IRegionManager _regionManager;
     private readonly IClaudeCodeServiceFactory _claudeCodeServiceFactory;
     private readonly IScriptExecutor _scriptExecutor;
+    private readonly ICheckpointService _checkpointService;
 
     [ObservableProperty]
     private ObservableCollection<SourceRepository> _repositories;
@@ -63,7 +64,8 @@ public partial class UnifiedMainViewModel : ViewModelBase
         IToastService toastService,
         IRegionManager regionManager,
         IClaudeCodeServiceFactory claudeCodeServiceFactory,
-        IScriptExecutor scriptExecutor)
+        IScriptExecutor scriptExecutor,
+        ICheckpointService checkpointService)
     {
         _repositoryManagementService = repositoryManagementService;
         _workspaceService = workspaceService;
@@ -71,6 +73,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
         _regionManager = regionManager;
         _claudeCodeServiceFactory = claudeCodeServiceFactory;
         _scriptExecutor = scriptExecutor;
+        _checkpointService = checkpointService;
         _repositories = _repositoryManagementService.Repositories;
     }
 
@@ -360,7 +363,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
 
         if (value != null && SelectedWorkspace != null)
         {
-            var chatViewModel = new ChatViewModel(value, SelectedWorkspace.Path, _toastService, _claudeCodeServiceFactory);
+            var chatViewModel = new ChatViewModel(value, SelectedWorkspace, _toastService, _claudeCodeServiceFactory, _checkpointService);
             chatViewModel.FirstMessageSent += OnFirstMessageSent;
             SelectedAgentChatViewModel = chatViewModel;
         }
