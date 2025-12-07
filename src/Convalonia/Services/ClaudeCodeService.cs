@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace Convalonia.Services;
 
@@ -12,6 +13,7 @@ namespace Convalonia.Services;
 /// </summary>
 public class ClaudeCodeService : IDisposable
 {
+    private readonly ILogger _logger = Log.ForContext<ClaudeCodeService>();
     private Process? _process;
     private readonly string _workingDirectory;
     private readonly StringBuilder _outputBuffer = new();
@@ -124,7 +126,7 @@ public class ClaudeCodeService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to start Claude Code: {ex.Message}");
+            _logger.Error(ex, "Failed to start Claude Code in {WorkingDirectory}", _workingDirectory);
             newProcess?.Dispose();
             return false;
         }
@@ -148,7 +150,7 @@ public class ClaudeCodeService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to send message: {ex.Message}");
+            _logger.Error(ex, "Failed to send message to Claude Code");
             return false;
         }
     }
@@ -229,7 +231,7 @@ public class ClaudeCodeService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error stopping Claude Code: {ex.Message}");
+            _logger.Error(ex, "Error stopping Claude Code");
         }
         finally
         {
@@ -281,7 +283,7 @@ public class ClaudeCodeService : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error during dispose: {ex.Message}");
+                _logger.Error(ex, "Error during dispose of Claude Code service");
             }
         }
 

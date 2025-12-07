@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Convalonia.Services.Validation;
+using Serilog;
 
 namespace Convalonia.Services;
 
@@ -11,11 +13,16 @@ namespace Convalonia.Services;
 /// </summary>
 public class FileSystemService : IFileSystemService
 {
+    private readonly ILogger _logger = Log.ForContext<FileSystemService>();
     /// <summary>
     /// Reads a file from the workspace
     /// </summary>
     public async Task<string> ReadFileAsync(string filePath)
     {
+        // Validate path
+        if (!InputValidator.IsValidPath(filePath))
+            throw new ValidationException("filePath", "Invalid file path");
+
         if (!File.Exists(filePath))
             throw new FileNotFoundException($"File not found: {filePath}");
 
@@ -27,6 +34,10 @@ public class FileSystemService : IFileSystemService
     /// </summary>
     public async Task WriteFileAsync(string filePath, string content)
     {
+        // Validate path
+        if (!InputValidator.IsValidPath(filePath))
+            throw new ValidationException("filePath", "Invalid file path");
+
         var directory = Path.GetDirectoryName(filePath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
@@ -41,6 +52,10 @@ public class FileSystemService : IFileSystemService
     /// </summary>
     public Task<List<string>> ListFilesAsync(string directoryPath, string pattern = "*")
     {
+        // Validate path
+        if (!InputValidator.IsValidPath(directoryPath))
+            throw new ValidationException("directoryPath", "Invalid directory path");
+
         if (!Directory.Exists(directoryPath))
             return Task.FromResult(new List<string>());
 
@@ -56,6 +71,10 @@ public class FileSystemService : IFileSystemService
     /// </summary>
     public async Task<List<FileMatch>> SearchInFilesAsync(string directoryPath, string searchPattern)
     {
+        // Validate path
+        if (!InputValidator.IsValidPath(directoryPath))
+            throw new ValidationException("directoryPath", "Invalid directory path");
+
         var matches = new List<FileMatch>();
 
         if (!Directory.Exists(directoryPath))
@@ -85,7 +104,7 @@ public class FileSystemService : IFileSystemService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error searching file {file}: {ex.Message}");
+                _logger.Warning(ex, "Error searching file {File}", file);
             }
         }
 
@@ -97,6 +116,10 @@ public class FileSystemService : IFileSystemService
     /// </summary>
     public Task DeleteFileAsync(string filePath)
     {
+        // Validate path
+        if (!InputValidator.IsValidPath(filePath))
+            throw new ValidationException("filePath", "Invalid file path");
+
         if (File.Exists(filePath))
         {
             File.Delete(filePath);

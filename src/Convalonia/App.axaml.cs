@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Markup.Xaml;
 using Jinobald.Avalonia.Application;
@@ -6,6 +7,8 @@ using Jinobald.Core.Ioc;
 using Convalonia.Views;
 using Convalonia.ViewModels;
 using Convalonia.Services;
+using Serilog;
+using Serilog.Events;
 
 namespace Convalonia;
 
@@ -17,6 +20,47 @@ public partial class App : ApplicationBase<MainWindow>
 
         // Setup global exception handlers
         SetupExceptionHandling();
+    }
+
+    /// <summary>
+    /// Configure Serilog for Convalonia with custom settings
+    /// </summary>
+    protected override void ConfigureLogging()
+    {
+        var logDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Convalonia",
+            "logs"
+        );
+
+        Directory.CreateDirectory(logDirectory);
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("System", LogEventLevel.Warning)
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty("Application", "Convalonia")
+            .WriteTo.Console(
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+            )
+            .WriteTo.File(
+                path: Path.Combine(logDirectory, "convalonia-.log"),
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+                retainedFileCountLimit: 30,
+                fileSizeLimitBytes: 10 * 1024 * 1024 // 10 MB
+            )
+            .WriteTo.File(
+                path: Path.Combine(logDirectory, "convalonia-errors-.log"),
+                restrictedToMinimumLevel: LogEventLevel.Error,
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 90,
+                fileSizeLimitBytes: 10 * 1024 * 1024 // 10 MB
+            )
+            .CreateLogger();
+
+        Log.Information("Convalonia logging initialized. Log directory: {LogDirectory}", logDirectory);
     }
 
     public override void RegisterTypes(IContainerRegistry containerRegistry)
@@ -53,21 +97,14 @@ public partial class App : ApplicationBase<MainWindow>
         AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
         {
             var exception = args.ExceptionObject as Exception;
-            LogException("AppDomain.UnhandledException", exception);
+            Log.Fatal(exception, "[AppDomain.UnhandledException] Critical unhandled exception occurred. IsTerminating={IsTerminating}", args.IsTerminating);
         };
 
         // Handle unobserved task exceptions
         TaskScheduler.UnobservedTaskException += (sender, args) =>
         {
-            LogException("TaskScheduler.UnobservedTaskException", args.Exception);
+            Log.Error(args.Exception, "[TaskScheduler.UnobservedTaskException] Unobserved task exception occurred");
             args.SetObserved(); // Prevent process termination
         };
-    }
-
-    private void LogException(string source, Exception? exception)
-    {
-        // TODO: Replace with Serilog when added
-        Console.WriteLine($"[{source}] Unhandled exception: {exception?.Message}");
-        Console.WriteLine(exception?.StackTrace);
     }
 }

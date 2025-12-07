@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Convalonia.Models;
+using Serilog;
 
 namespace Convalonia.Services;
 
@@ -14,6 +15,7 @@ namespace Convalonia.Services;
 /// </summary>
 public class RepositoryManagementService : IRepositoryManagementService
 {
+    private readonly ILogger _logger = Log.ForContext<RepositoryManagementService>();
     private readonly ObservableCollection<SourceRepository> _repositories = new();
     private readonly string _baseDataPath;
     private readonly IGitService _gitHubService;
@@ -254,7 +256,7 @@ public class RepositoryManagementService : IRepositoryManagementService
         catch (Exception ex)
         {
             // Log error but don't crash
-            Console.WriteLine($"Failed to load repositories: {ex.Message}");
+            _logger.Error(ex, "Failed to load repositories from {BasePath}", _baseDataPath);
         }
     }
 
@@ -272,7 +274,7 @@ public class RepositoryManagementService : IRepositoryManagementService
         catch (Exception ex)
         {
             // Log error but don't crash
-            Console.WriteLine($"Failed to save repositories: {ex.Message}");
+            _logger.Error(ex, "Failed to save repositories to {BasePath}", _baseDataPath);
         }
     }
 }
