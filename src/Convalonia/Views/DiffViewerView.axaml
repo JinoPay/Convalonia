@@ -1,0 +1,250 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Convalonia.ViewModels"
+             xmlns:models="using:Convalonia.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Convalonia.Views.DiffViewerView"
+             x:DataType="vm:DiffViewerViewModel">
+
+    <Design.DataContext>
+        <vm:DiffViewerViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                BorderBrush="{DynamicResource SystemAccentColor}"
+                BorderThickness="0,0,0,1"
+                Padding="15">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <!-- Summary -->
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="Changed Files" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding DiffSummary}"
+                               FontSize="12"
+                               Opacity="0.7"/>
+                </StackPanel>
+
+                <!-- Refresh Button -->
+                <Button Grid.Column="1"
+                        Content="🔄 Refresh"
+                        Command="{Binding RefreshCommand}"
+                        Margin="0,0,10,0"
+                        Padding="12,6"/>
+
+                <!-- Loading Indicator -->
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            IsVisible="{Binding IsLoading}">
+                    <TextBlock Text="Loading..." FontSize="12" VerticalAlignment="Center"/>
+                    <ProgressBar IsIndeterminate="True" Width="100" Height="4"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="300,5,*">
+            <!-- File List -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                    BorderBrush="{DynamicResource SystemAccentColor}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- File List Header -->
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                            BorderBrush="{DynamicResource SystemAccentColor}"
+                            BorderThickness="0,0,0,1"
+                            Padding="10">
+                        <TextBlock Text="Files" FontSize="13" FontWeight="SemiBold"/>
+                    </Border>
+
+                    <!-- File List Items -->
+                    <Grid Grid.Row="1">
+                        <!-- Empty State -->
+                        <StackPanel IsVisible="{Binding !ChangedFiles.Count}"
+                                    Spacing="10"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="20">
+                            <TextBlock Text="📄" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Text="No changes" FontSize="14" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Make some changes to see diffs"
+                                       FontSize="11"
+                                       Opacity="0.7"
+                                       HorizontalAlignment="Center"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- File List -->
+                        <ScrollViewer IsVisible="{Binding ChangedFiles.Count}">
+                        <ItemsControl ItemsSource="{Binding ChangedFiles}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="models:FileDiff">
+                                    <Border Background="{DynamicResource SystemControlBackgroundBaseMediumBrush}"
+                                            BorderBrush="{DynamicResource SystemAccentColor}"
+                                            BorderThickness="0,0,0,1"
+                                            Padding="10"
+                                            Cursor="Hand">
+                                        <Border.Styles>
+                                            <Style Selector="Border:pointerover">
+                                                <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundListMediumBrush}"/>
+                                            </Style>
+                                        </Border.Styles>
+
+                                        <Grid RowDefinitions="Auto,Auto">
+                                            <!-- File Name -->
+                                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
+                                                <!-- Change Type Icon -->
+                                                <TextBlock Grid.Column="0"
+                                                           Margin="0,0,8,0"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="{}">
+                                                            <Binding Path="ChangeType">
+                                                                <Binding.Converter>
+                                                                    <vm:FileChangeTypeIconConverter />
+                                                                </Binding.Converter>
+                                                            </Binding>
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+
+                                                <!-- File Path -->
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding FilePath}"
+                                                           FontSize="12"
+                                                           TextWrapping="Wrap"
+                                                           VerticalAlignment="Center"/>
+                                            </Grid>
+
+                                            <!-- Stats -->
+                                            <StackPanel Grid.Row="1"
+                                                        Orientation="Horizontal"
+                                                        Spacing="8"
+                                                        Margin="24,4,0,0">
+                                                <TextBlock FontSize="10" Foreground="#22c55e">
+                                                    <Run Text="+"/>
+                                                    <Run Text="{Binding AddedLines}"/>
+                                                </TextBlock>
+                                                <TextBlock FontSize="10" Foreground="#ef4444">
+                                                    <Run Text="-"/>
+                                                    <Run Text="{Binding DeletedLines}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1"
+                          Background="{DynamicResource SystemAccentColor}"
+                          ResizeDirection="Columns"/>
+
+            <!-- Diff Content -->
+            <Border Grid.Column="2"
+                    Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- Diff Header -->
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                            BorderBrush="{DynamicResource SystemAccentColor}"
+                            BorderThickness="0,0,0,1"
+                            Padding="10"
+                            IsVisible="{Binding SelectedFile, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <TextBlock Text="{Binding SelectedFile.FilePath}"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+
+                    <!-- Diff View -->
+                    <Grid Grid.Row="1">
+                        <!-- No Selection -->
+                        <StackPanel IsVisible="{Binding SelectedFile, Converter={x:Static ObjectConverters.IsNull}}"
+                                    Spacing="10"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="20">
+                            <TextBlock Text="📋" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Select a file to view diff"
+                                       FontSize="14"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Diff Content -->
+                        <ScrollViewer IsVisible="{Binding SelectedFile, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <ItemsControl ItemsSource="{Binding SelectedFile.Hunks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="models:DiffHunk">
+                                    <StackPanel Spacing="0" Margin="0,0,0,10">
+                                        <!-- Hunk Header -->
+                                        <Border Background="#0e4c92"
+                                                Padding="8,4">
+                                            <TextBlock Text="{Binding Header}"
+                                                       FontFamily="Consolas,Menlo,Monaco,monospace"
+                                                       FontSize="11"
+                                                       Foreground="White"/>
+                                        </Border>
+
+                                        <!-- Hunk Lines -->
+                                        <ItemsControl ItemsSource="{Binding Lines}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="models:DiffLine">
+                                                    <Border Padding="8,2">
+                                                        <Border.Background>
+                                                            <MultiBinding Converter="{x:Static vm:DiffLineBackgroundConverter.Instance}">
+                                                                <Binding Path="Type"/>
+                                                            </MultiBinding>
+                                                        </Border.Background>
+
+                                                        <Grid ColumnDefinitions="40,40,*">
+                                                            <!-- Old Line Number -->
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="{Binding OldLineNumber}"
+                                                                       FontFamily="Consolas,Menlo,Monaco,monospace"
+                                                                       FontSize="10"
+                                                                       Opacity="0.5"
+                                                                       HorizontalAlignment="Right"
+                                                                       Margin="0,0,8,0"/>
+
+                                                            <!-- New Line Number -->
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{Binding NewLineNumber}"
+                                                                       FontFamily="Consolas,Menlo,Monaco,monospace"
+                                                                       FontSize="10"
+                                                                       Opacity="0.5"
+                                                                       HorizontalAlignment="Right"
+                                                                       Margin="0,0,8,0"/>
+
+                                                            <!-- Content -->
+                                                            <TextBlock Grid.Column="2"
+                                                                       Text="{Binding Content}"
+                                                                       FontFamily="Consolas,Menlo,Monaco,monospace"
+                                                                       FontSize="11"
+                                                                       TextWrapping="NoWrap"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -25,6 +25,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     private readonly IClaudeCodeServiceFactory _claudeCodeServiceFactory;
     private readonly IScriptExecutor _scriptExecutor;
     private readonly ICheckpointService _checkpointService;
+    private readonly IGitService _gitService;
 
     [ObservableProperty]
     private ObservableCollection<SourceRepository> _repositories;
@@ -42,10 +43,16 @@ public partial class UnifiedMainViewModel : ViewModelBase
     private ChatViewModel? _selectedAgentChatViewModel;
 
     [ObservableProperty]
+    private DiffViewerViewModel? _diffViewerViewModel;
+
+    [ObservableProperty]
     private bool _isTerminalVisible;
 
     [ObservableProperty]
     private bool _isRunScriptRunning;
+
+    [ObservableProperty]
+    private string _selectedMainTab = "Chat";
 
     /// <summary>
     /// Available AI models for agent selection
@@ -65,7 +72,9 @@ public partial class UnifiedMainViewModel : ViewModelBase
         IRegionManager regionManager,
         IClaudeCodeServiceFactory claudeCodeServiceFactory,
         IScriptExecutor scriptExecutor,
-        ICheckpointService checkpointService)
+        ICheckpointService checkpointService,
+        IGitService gitService,
+        DiffViewerViewModel diffViewerViewModel)
     {
         _repositoryManagementService = repositoryManagementService;
         _workspaceService = workspaceService;
@@ -74,6 +83,8 @@ public partial class UnifiedMainViewModel : ViewModelBase
         _claudeCodeServiceFactory = claudeCodeServiceFactory;
         _scriptExecutor = scriptExecutor;
         _checkpointService = checkpointService;
+        _gitService = gitService;
+        _diffViewerViewModel = diffViewerViewModel;
         _repositories = _repositoryManagementService.Repositories;
     }
 
@@ -336,17 +347,36 @@ public partial class UnifiedMainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Updates run script status when workspace changes
+    /// Updates run script status and diff viewer when workspace changes
     /// </summary>
     partial void OnSelectedWorkspaceChanged(Workspace? value)
     {
         if (value != null)
         {
             IsRunScriptRunning = _scriptExecutor.IsRunScriptRunning(value.Id);
+
+            // Update diff viewer with new workspace
+            if (DiffViewerViewModel != null)
+            {
+                _ = DiffViewerViewModel.SetWorkspaceAsync(value);
+            }
         }
         else
         {
             IsRunScriptRunning = false;
+        }
+    }
+
+    /// <summary>
+    /// Switches to the Files tab
+    /// </summary>
+    [RelayCommand]
+    private void ShowDiffViewer()
+    {
+        SelectedMainTab = "Files";
+        if (DiffViewerViewModel != null && SelectedWorkspace != null)
+        {
+            _ = DiffViewerViewModel.RefreshAsync();
         }
     }
 

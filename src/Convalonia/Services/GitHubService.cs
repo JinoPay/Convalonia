@@ -956,4 +956,146 @@ public class GitHubService : IGitService
     }
 
     #endregion
+
+    #region Diff Operations
+
+    /// <summary>
+    /// Gets the diff for the workspace
+    /// </summary>
+    /// <param name="workspacePath">Workspace path</param>
+    /// <param name="compareSpec">Optional compare spec (e.g., "main...HEAD", "HEAD~1", etc.)</param>
+    /// <returns>Diff output</returns>
+    public async Task<string> GetDiffAsync(string workspacePath, string? compareSpec = null)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var arguments = string.IsNullOrWhiteSpace(compareSpec)
+                ? "diff HEAD"
+                : $"diff {InputValidator.EscapeGitArgument(compareSpec)}";
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return string.Empty;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0 ? output : string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get diff in {WorkspacePath}", workspacePath);
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Gets list of changed files in the workspace
+    /// </summary>
+    /// <param name="workspacePath">Workspace path</param>
+    /// <param name="includeUntracked">Whether to include untracked files</param>
+    /// <returns>Array of file paths</returns>
+    public async Task<string[]> GetChangedFilesAsync(string workspacePath, bool includeUntracked = true)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var arguments = includeUntracked
+                ? "status --porcelain"
+                : "status --porcelain --untracked-files=no";
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return Array.Empty<string>();
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+                return Array.Empty<string>();
+
+            // Parse git status output (format: "XY filename")
+            return output
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Length > 3 ? line[3..].Trim() : string.Empty)
+                .Where(file => !string.IsNullOrWhiteSpace(file))
+                .ToArray();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get changed files in {WorkspacePath}", workspacePath);
+            return Array.Empty<string>();
+        }
+    }
+
+    /// <summary>
+    /// Gets diff for a specific file
+    /// </summary>
+    /// <param name="workspacePath">Workspace path</param>
+    /// <param name="filePath">Relative file path</param>
+    /// <returns>File diff output</returns>
+    public async Task<string> GetFileDiffAsync(string workspacePath, string filePath)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+        if (string.IsNullOrWhiteSpace(filePath))
+            throw new ValidationException("filePath", "File path cannot be empty");
+
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"diff HEAD -- {InputValidator.EscapeGitArgument(filePath)}",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return string.Empty;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return process.ExitCode == 0 ? output : string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get diff for file {FilePath} in {WorkspacePath}", filePath, workspacePath);
+            return string.Empty;
+        }
+    }
+
+    #endregion
 }
