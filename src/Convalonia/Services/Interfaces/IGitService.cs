@@ -36,4 +36,9 @@ public interface IGitService
     Task<string> GetDiffAsync(string workspacePath, string? compareSpec = null);
     Task<string[]> GetChangedFilesAsync(string workspacePath, bool includeUntracked = true);
     Task<string> GetFileDiffAsync(string workspacePath, string filePath);
+
+    // Pull Request operations
+    Task<bool> PushBranchAsync(string workspacePath, string branchName, bool setUpstream = true);
+    Task<string?> CreatePullRequestAsync(string workspacePath, string title, string body, string baseBranch = "main");
+    Task<string?> GetCurrentRemoteUrlAsync(string workspacePath);
 }

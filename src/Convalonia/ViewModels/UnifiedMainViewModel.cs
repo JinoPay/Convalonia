@@ -10,6 +10,7 @@ using Convalonia.Views;
 using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Regions;
 using Jinobald.Core.Services.Toast;
+using Serilog;
 
 namespace Convalonia.ViewModels;
 
@@ -26,6 +27,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     private readonly IScriptExecutor _scriptExecutor;
     private readonly ICheckpointService _checkpointService;
     private readonly IGitService _gitService;
+    private readonly ILogger _logger = Log.ForContext<UnifiedMainViewModel>();
 
     [ObservableProperty]
     private ObservableCollection<SourceRepository> _repositories;
@@ -378,6 +380,182 @@ public partial class UnifiedMainViewModel : ViewModelBase
         {
             _ = DiffViewerViewModel.RefreshAsync();
         }
+    }
+
+    /// <summary>
+    /// Creates a pull request for the current workspace
+    /// </summary>
+    [RelayCommand]
+    private async Task CreatePullRequestAsync()
+    {
+        if (SelectedWorkspace == null)
+        {
+            _toastService.ShowWarning("워크스페이스를 선택하세요");
+            return;
+        }
+
+        try
+        {
+            _toastService.ShowInfo("PR 생성 중...");
+
+            // 1. Get current branch
+            var currentBranch = await _gitService.GetCurrentBranchAsync(SelectedWorkspace.Path);
+            if (string.IsNullOrEmpty(currentBranch))
+            {
+                _toastService.ShowError("현재 브랜치를 가져올 수 없습니다");
+                return;
+            }
+
+            // 2. Check for uncommitted changes
+            var hasUncommitted = await _gitService.HasUncommittedChangesAsync(SelectedWorkspace.Path);
+            if (hasUncommitted)
+            {
+                _toastService.ShowWarning("커밋되지 않은 변경사항이 있습니다. 먼저 커밋하세요");
+                return;
+            }
+
+            // 3. Push to remote
+            _toastService.ShowInfo($"브랜치 '{currentBranch}' 푸시 중...");
+            var pushed = await _gitService.PushBranchAsync(SelectedWorkspace.Path, currentBranch, setUpstream: true);
+            if (!pushed)
+            {
+                _toastService.ShowError("브랜치 푸시 실패");
+                return;
+            }
+
+            // 4. Generate PR title and body
+            var prTitle = GeneratePRTitle(SelectedWorkspace, currentBranch);
+            var prBody = await GeneratePRBodyAsync(SelectedWorkspace);
+
+            // 5. Create PR using GitHub CLI
+            _toastService.ShowInfo("GitHub PR 생성 중...");
+            var prUrl = await _gitService.CreatePullRequestAsync(
+                SelectedWorkspace.Path,
+                prTitle,
+                prBody,
+                baseBranch: "main"
+            );
+
+            if (prUrl != null)
+            {
+                _toastService.ShowSuccess($"PR 생성 완료!");
+                _logger.Information("Created PR for workspace {WorkspaceName}: {PrUrl}", SelectedWorkspace.Name, prUrl);
+
+                // Open PR URL in browser
+                try
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = prUrl,
+                        UseShellExecute = true
+                    };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "Failed to open PR URL in browser");
+                }
+            }
+            else
+            {
+                _toastService.ShowError("PR 생성 실패. GitHub CLI가 설치되어 있는지 확인하세요");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to create pull request for workspace {WorkspacePath}", SelectedWorkspace?.Path);
+            _toastService.ShowError($"PR 생성 실패: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Generates PR title from workspace name and branch
+    /// </summary>
+    private string GeneratePRTitle(Workspace workspace, string branchName)
+    {
+        // Remove common prefixes like "feature/", "bugfix/", "JinoPay/"
+        var cleanBranch = branchName;
+        var prefixes = new[] { "feature/", "bugfix/", "hotfix/", "JinoPay/", "fix/", "feat/" };
+        foreach (var prefix in prefixes)
+        {
+            if (cleanBranch.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                cleanBranch = cleanBranch[prefix.Length..];
+                break;
+            }
+        }
+
+        // Convert kebab-case or snake_case to Title Case
+        cleanBranch = cleanBranch
+            .Replace("-", " ")
+            .Replace("_", " ");
+
+        // Capitalize first letter of each word
+        var words = cleanBranch.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        cleanBranch = string.Join(" ", words.Select(w =>
+            w.Length > 0 ? char.ToUpper(w[0]) + w[1..].ToLower() : w
+        ));
+
+        return cleanBranch;
+    }
+
+    /// <summary>
+    /// Generates PR body with summary of changes
+    /// </summary>
+    private async Task<string> GeneratePRBodyAsync(Workspace workspace)
+    {
+        var body = new System.Text.StringBuilder();
+
+        body.AppendLine("## Summary");
+        body.AppendLine();
+
+        // Get changed files
+        var changedFiles = await _gitService.GetChangedFilesAsync(workspace.Path, includeUntracked: false);
+        if (changedFiles.Length > 0)
+        {
+            body.AppendLine($"- {changedFiles.Length} file(s) changed");
+        }
+
+        // Get diff stats
+        var diff = await _gitService.GetDiffAsync(workspace.Path, "main...HEAD");
+        if (!string.IsNullOrEmpty(diff))
+        {
+            var lines = diff.Split('\n');
+            var addedLines = lines.Count(l => l.StartsWith("+") && !l.StartsWith("+++"));
+            var deletedLines = lines.Count(l => l.StartsWith("-") && !l.StartsWith("---"));
+            body.AppendLine($"- +{addedLines} -{deletedLines} lines");
+        }
+
+        body.AppendLine();
+        body.AppendLine("## Changes");
+        body.AppendLine();
+
+        if (changedFiles.Length > 0)
+        {
+            foreach (var file in changedFiles.Take(10))
+            {
+                body.AppendLine($"- `{file}`");
+            }
+
+            if (changedFiles.Length > 10)
+            {
+                body.AppendLine($"- ... and {changedFiles.Length - 10} more files");
+            }
+        }
+        else
+        {
+            body.AppendLine("No changes detected.");
+        }
+
+        body.AppendLine();
+        body.AppendLine("## Test Plan");
+        body.AppendLine("- [ ] Manual testing completed");
+        body.AppendLine("- [ ] Unit tests added/updated");
+        body.AppendLine("- [ ] Integration tests passed");
+        body.AppendLine();
+        body.AppendLine("🤖 Generated with [Claude Code](https://claude.com/claude-code)");
+
+        return body.ToString();
     }
 
     /// <summary>

@@ -210,6 +210,11 @@
                                 </TextBlock>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                <Button Content="🔀 PR 생성"
+                                        Command="{Binding CreatePullRequestCommand}"
+                                        Padding="12,6"
+                                        FontSize="12"
+                                        ToolTip.Tip="Pull Request 생성 (⌘⇧P)"/>
                                 <Button Content="📁 폴더 열기"
                                         Command="{Binding OpenWorkspaceFolderCommand}"
                                         Padding="12,6"
