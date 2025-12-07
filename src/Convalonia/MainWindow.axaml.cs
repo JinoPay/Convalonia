@@ -29,11 +29,12 @@ public partial class MainWindow : Window
         dialogService.RegisterHost(DialogHost);
         toastService.RegisterHost(ToastHost);
 
-        // Navigate to appropriate initial screen after window is opened
-        Opened += OnWindowOpened;
+        // Navigate to appropriate initial screen after window is fully loaded
+        // Use Loaded event instead of Opened to ensure Region is ready
+        Loaded += OnWindowLoaded;
     }
 
-    private async void OnWindowOpened(object? sender, System.EventArgs e)
+    private async void OnWindowLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         try
         {

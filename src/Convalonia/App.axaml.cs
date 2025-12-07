@@ -107,6 +107,7 @@ public partial class App : ApplicationBase<MainWindow>
         containerRegistry.RegisterForNavigation<WorkspaceListView, WorkspaceListViewModel>();
         containerRegistry.RegisterForNavigation<WorkspaceView, WorkspaceViewModel>();
         containerRegistry.RegisterForNavigation<ChatView, ChatViewModel>();
+        containerRegistry.RegisterForNavigation<UnifiedMainView, UnifiedMainViewModel>();
     }
 
     /// <summary>
