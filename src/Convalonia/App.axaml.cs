@@ -2,16 +2,19 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Markup.Xaml;
-using Jinobald.Avalonia.Application;
-using Jinobald.Core.Ioc;
+using Convalonia.Infrastructure;
 using Convalonia.Views;
 using Convalonia.ViewModels;
 using Convalonia.Services;
+using Convalonia.Services.Toast;
 using Convalonia.Models;
 using Convalonia.Validators;
 using FluentValidation;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using Serilog.Extensions.Logging;
 
 namespace Convalonia;
 
@@ -63,51 +66,69 @@ public partial class App : ApplicationBase<MainWindow>
         Log.Information("Convalonia logging initialized. Log directory: {LogDirectory}", logDirectory);
     }
 
-    public override void RegisterTypes(IContainerRegistry containerRegistry)
+    public override void RegisterTypes(IServiceCollection services)
     {
+        // Register Logging
+        services.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.ClearProviders();
+            loggingBuilder.AddSerilog(Log.Logger, dispose: false);
+        });
+
         // Register Validators
-        containerRegistry.RegisterSingleton<IValidator<Repository>, RepositoryValidator>();
-        containerRegistry.RegisterSingleton<IValidator<Workspace>, WorkspaceValidator>();
-        containerRegistry.RegisterSingleton<IValidator<Agent>, AgentValidator>();
-        containerRegistry.RegisterSingleton<IValidator<string>, GitCommitMessageValidator>();
-        containerRegistry.RegisterSingleton<IValidator<CommitMessageRequest>, CommitMessageRequestValidator>();
+        services.AddSingleton<IValidator<Repository>, RepositoryValidator>();
+        services.AddSingleton<IValidator<Workspace>, WorkspaceValidator>();
+        services.AddSingleton<IValidator<Agent>, AgentValidator>();
+        services.AddSingleton<IValidator<string>, GitCommitMessageValidator>();
+        services.AddSingleton<IValidator<CommitMessageRequest>, CommitMessageRequestValidator>();
+
+        // Register UI Services
+        services.AddSingleton<IToastService, ToastService>();
+        services.AddSingleton<Services.Dialog.IDialogService, Services.Dialog.DialogService>();
+        services.AddSingleton<Services.Navigation.IRegionManager, Services.Navigation.RegionManager>();
 
         // Register Services with interfaces
-        containerRegistry.RegisterSingleton<IGitService, GitHubService>();
-        containerRegistry.RegisterSingleton<IWorkspaceService, WorkspaceService>();
-        containerRegistry.RegisterSingleton<IFileSystemService, FileSystemService>();
-        containerRegistry.RegisterSingleton<IRepositoryService, RepositoryService>();
-        containerRegistry.RegisterSingleton<IRepositoryManagementService, RepositoryManagementService>();
-        containerRegistry.RegisterSingleton<IClaudeCodeServiceFactory, ClaudeCodeServiceFactory>();
+        services.AddSingleton<IGitService, GitHubService>();
+        services.AddSingleton<IWorkspaceService, WorkspaceService>();
+        services.AddSingleton<IFileSystemService, FileSystemService>();
+        services.AddSingleton<IRepositoryService, RepositoryService>();
+        services.AddSingleton<IRepositoryManagementService, RepositoryManagementService>();
+        services.AddSingleton<IClaudeCodeServiceFactory, ClaudeCodeServiceFactory>();
 
         // Register Conductor-specific services
-        containerRegistry.RegisterSingleton<IConductorConfigService, ConductorConfigService>();
-        containerRegistry.RegisterSingleton<IPortAllocator, PortAllocator>();
-        containerRegistry.RegisterSingleton<IScriptExecutor, ScriptExecutor>();
-        containerRegistry.RegisterSingleton<ICheckpointService, CheckpointService>();
+        services.AddSingleton<IConductorConfigService, ConductorConfigService>();
+        services.AddSingleton<IPortAllocator, PortAllocator>();
+        services.AddSingleton<IScriptExecutor, ScriptExecutor>();
+        services.AddSingleton<ICheckpointService, CheckpointService>();
 
         // Register Persistence services
-        containerRegistry.RegisterSingleton<IWorkspacePersistenceService, WorkspacePersistenceService>();
-        containerRegistry.RegisterSingleton<IAgentPersistenceService, AgentPersistenceService>();
+        services.AddSingleton<IWorkspacePersistenceService, WorkspacePersistenceService>();
+        services.AddSingleton<IAgentPersistenceService, AgentPersistenceService>();
 
         // Also register concrete types for backwards compatibility
-        containerRegistry.RegisterSingleton<GitHubService>();
-        containerRegistry.RegisterSingleton<WorkspaceService>();
-        containerRegistry.RegisterSingleton<FileSystemService>();
-        containerRegistry.RegisterSingleton<RepositoryService>();
-        containerRegistry.RegisterSingleton<RepositoryManagementService>();
+        services.AddSingleton<GitHubService>();
+        services.AddSingleton<WorkspaceService>();
+        services.AddSingleton<FileSystemService>();
+        services.AddSingleton<RepositoryService>();
+        services.AddSingleton<RepositoryManagementService>();
 
         // ClaudeCodeService is created per-agent via Factory pattern
 
         // Register ViewModels
-        containerRegistry.RegisterForNavigation<SetupView, SetupViewModel>();
-        containerRegistry.RegisterForNavigation<RepositoryListView, RepositoryListViewModel>();
-        containerRegistry.RegisterForNavigation<RepositoryDetailView, RepositoryDetailViewModel>();
-        containerRegistry.RegisterForNavigation<HomeView, HomeViewModel>();
-        containerRegistry.RegisterForNavigation<WorkspaceListView, WorkspaceListViewModel>();
-        containerRegistry.RegisterForNavigation<WorkspaceView, WorkspaceViewModel>();
-        containerRegistry.RegisterForNavigation<ChatView, ChatViewModel>();
-        containerRegistry.RegisterForNavigation<UnifiedMainView, UnifiedMainViewModel>();
+        services.RegisterForNavigation<SetupView, SetupViewModel>();
+        services.RegisterForNavigation<RepositoryListView, RepositoryListViewModel>();
+        services.RegisterForNavigation<RepositoryDetailView, RepositoryDetailViewModel>();
+        services.RegisterForNavigation<HomeView, HomeViewModel>();
+        services.RegisterForNavigation<WorkspaceListView, WorkspaceListViewModel>();
+        services.RegisterForNavigation<WorkspaceView, WorkspaceViewModel>();
+        services.RegisterForNavigation<ChatView, ChatViewModel>();
+        services.RegisterForNavigation<UnifiedMainView, UnifiedMainViewModel>();
+
+        // Register additional ViewModels that may be injected
+        services.AddTransient<DiffViewerViewModel>();
+        services.AddTransient<MainWindowViewModel>();
+        services.AddTransient<AddRepositoryViewModel>();
+        services.AddTransient<BranchSelectorViewModel>();
     }
 
     /// <summary>
@@ -116,7 +137,7 @@ public partial class App : ApplicationBase<MainWindow>
     public override async Task OnInitializeAsync()
     {
         // Initialize RepositoryManagementService to load existing repositories
-        var repositoryService = Container?.Resolve<RepositoryManagementService>();
+        var repositoryService = ServiceProvider?.GetService<RepositoryManagementService>();
         if (repositoryService != null)
         {
             await repositoryService.InitializeAsync();

@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Convalonia.Services;
-using Jinobald.Core.Services.Toast;
+using Convalonia.Services.Toast;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 

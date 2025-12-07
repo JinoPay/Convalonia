@@ -5,8 +5,7 @@ using System.Reactive;
 using System.Threading.Tasks;
 using Convalonia.Models;
 using Convalonia.Services;
-using Jinobald.Core.Mvvm;
-using Jinobald.Core.Services.Toast;
+using Convalonia.Services.Toast;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
@@ -15,7 +14,7 @@ namespace Convalonia.ViewModels;
 /// <summary>
 /// ViewModel for a single workspace with multiple agents
 /// </summary>
-public partial class WorkspaceViewModel : ReactiveObject, INavigationAware
+public partial class WorkspaceViewModel : ReactiveObject
 {
     private Workspace? _workspace;
     private readonly WorkspaceService _workspaceService;
@@ -63,30 +62,16 @@ public partial class WorkspaceViewModel : ReactiveObject, INavigationAware
             .Subscribe(value => UpdateSelectedAgentChatViewModel(value));
     }
 
-    public async Task OnNavigatedToAsync(NavigationContext context)
+    /// <summary>
+    /// Initialize the workspace with the given ID
+    /// Called by the navigation system via reflection
+    /// </summary>
+    public void Initialize(object parameter)
     {
-        // Get workspace ID from navigation parameter
-        if (context.Parameter is Guid workspaceId)
+        if (parameter is Guid workspaceId)
         {
             LoadWorkspace(workspaceId);
         }
-
-        await Task.CompletedTask;
-    }
-
-    public Task<bool> OnNavigatingToAsync(NavigationContext context)
-    {
-        return Task.FromResult(true);
-    }
-
-    public Task<bool> OnNavigatingFromAsync(NavigationContext context)
-    {
-        return Task.FromResult(true);
-    }
-
-    public Task OnNavigatedFromAsync(NavigationContext context)
-    {
-        return Task.CompletedTask;
     }
 
     private void LoadWorkspace(Guid workspaceId)
