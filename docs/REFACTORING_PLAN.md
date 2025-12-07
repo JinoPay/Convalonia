@@ -641,13 +641,18 @@ Week 6: Phase 10 (Documentation) + 최종 테스트
 4. ✅ Deadlock 수정 (ClaudeCodeService.cs)
 5. ✅ AgentSelectionConverter 추가 (UnifiedMainView.axaml)
 
-### Phase 2 (진행 중)
+### Phase 2 (완료 ✅)
 6. ✅ Process 리소스 누수 수정 (ClaudeCodeService.cs) - 스레드 안전성, Dispose 패턴 개선
 7. ✅ HttpClient 안티패턴 수정 (IClaudeApiService 인터페이스 추가)
 8. ✅ async void 이벤트 핸들러 수정 (try-catch 추가)
 9. ✅ DI 인터페이스 추가 (IGitService, IWorkspaceService, IRepositoryService 등)
 10. ✅ 전역 예외 처리 추가 (App.axaml.cs)
-11. ⏳ 입력 검증 추가 (URL, 경로, 브랜치명)
-12. ⏳ Serilog 로깅 도입
+11. ✅ 입력 검증 추가 - FluentValidation 23개 규칙 (Repository, Workspace, Agent, GitCommitMessage)
+12. ✅ Serilog 로깅 도입 (이미 구현되어 있음)
 
-**다음 단계**: Phase 2 완료 후 Phase 3 Architecture Refactoring 시작
+### Phase 3 (완료 ✅)
+13. ✅ ChatViewModel DI 리팩터링 - IClaudeCodeServiceFactory 패턴 적용
+14. ✅ ClaudeCodeService.IsRunning 스레드 안전성 (이미 구현되어 있음)
+15. ✅ Factory 패턴을 통한 결합도 개선 (3개 ViewModel 수정)
+
+**다음 단계**: Phase 4 UI/UX Completion 또는 Phase 6 Conductor Scripts 구현

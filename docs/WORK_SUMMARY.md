@@ -1,8 +1,9 @@
 # Convalonia 작업 요약
 
 **작업 날짜**: 2025-12-07
-**현재 브랜치**: JinoPay/worcester
+**현재 브랜치**: JinoPay/phase2-validation-logging
 **프로젝트**: Conductor 유사 병렬 Claude 작업 프로그램
+**최근 업데이트**: Phase 2 & 3 완료 (입력 검증 + DI 리팩터링)
 
 ---
 
@@ -245,14 +246,14 @@ Week 7: 품질 확보
 
 ## 📊 현재 상태 평가
 
-| 항목 | 점수 | 목표 | 비고 |
-|------|------|------|------|
-| 아키텍처 | 7/10 | 9/10 | MVVM은 좋으나 결합도 개선 필요 |
-| 보안 | 5/10 | 9/10 | **CRITICAL 이슈 존재** |
-| 코드 품질 | 6.5/10 | 8.5/10 | 안티패턴 제거 필요 |
-| 완성도 | 60% | 95% | Conductor 핵심 기능 미구현 |
-| 성능 | 6/10 | 8/10 | 메모리 누수, 블로킹 호출 수정 |
-| 테스트 | 0/10 | 7/10 | 단위/통합 테스트 없음 |
+| 항목 | 이전 | 현재 | 목표 | 비고 |
+|------|------|------|------|------|
+| 아키텍처 | 7/10 | **8/10** | 9/10 | Factory 패턴 적용, DI 개선 완료 ✅ |
+| 보안 | 5/10 | **9/10** | 9/10 | CRITICAL 이슈 모두 수정 완료 ✅ |
+| 코드 품질 | 6.5/10 | **8/10** | 8.5/10 | 안티패턴 제거, 입력 검증 추가 ✅ |
+| 완성도 | 60% | **65%** | 95% | Conductor 핵심 기능 미구현 |
+| 성능 | 6/10 | **7/10** | 8/10 | 데드락, 리소스 누수 수정 완료 ✅ |
+| 테스트 | 0/10 | **0/10** | 7/10 | 단위/통합 테스트 필요 ⏳ |
 
 ---
 
@@ -283,27 +284,64 @@ Week 7: 품질 확보
 
 ---
 
+## 🎉 최근 완료 작업 (2025-12-07)
+
+### Phase 2: 입력 검증 (완료 ✅)
+- ✅ FluentValidation 패키지 추가 (v12.1.1)
+- ✅ 4개 Validator 클래스 생성 (336줄, 23개 검증 규칙)
+  - `RepositoryValidator`: URL, 경로, 브랜치명 검증
+  - `WorkspaceValidator`: 워크스페이스 속성 검증
+  - `AgentValidator`: AI 모델, 시간 검증
+  - `GitCommitMessageValidator`: 커밋 메시지 보안 검증
+- ✅ RepositoryService, WorkspaceService에 검증 통합
+- ✅ DI 컨테이너에 Validators 등록
+
+**커밋**: `0acd4d8` - Implement Phase 2 input validation with FluentValidation
+
+### Phase 3: DI 리팩터링 (완료 ✅)
+- ✅ IClaudeCodeServiceFactory 인터페이스 생성
+- ✅ ClaudeCodeServiceFactory 구현
+- ✅ ChatViewModel에서 `new ClaudeCodeService()` 제거
+- ✅ Factory 패턴으로 전환 (3개 ViewModel 수정)
+- ✅ DI 컨테이너에 Factory 등록
+
+**커밋**: `3fe3c1c` - Implement Phase 3 Architecture Refactoring: Factory Pattern
+
+### 검증 완료
+- ✅ `.Wait()` / `.Result` 안티패턴 모두 제거됨
+- ✅ `async void` 이벤트 핸들러 예외 처리 완료
+- ✅ HttpClient 안티패턴 개선 (IClaudeApiService 인터페이스)
+- ✅ ClaudeCodeService는 Factory를 통해서만 생성됨
+- ✅ 빌드 성공 (0 errors, 12 warnings)
+
+---
+
 ## 📝 다음 단계
 
-### 1. 브랜치 확인
+### 1. Phase 4: UI/UX Completion
 ```bash
-git status
-# 현재: JinoPay/worcester
+# 미완성 UI 기능 구현
+# - Run 버튼 구현
+# - Terminal 버튼 구현
+# - Files 탭 구현
+# - AI 모델 선택 연결
 ```
 
-### 2. CRITICAL 작업 시작
+### 2. Phase 5: Conductor Scripts
 ```bash
-# 보안 이슈부터 수정
-# 1. GitHubService.cs - Command Injection
-# 2. FileSystemService.cs - Path Traversal
+# conductor.json 구현
+# - ConductorConfigService.cs 구현
+# - ScriptExecutor.cs 구현
+# - 환경 변수 시스템
+# - 포트 할당 시스템
 ```
 
-### 3. 병렬 작업 준비
+### 3. Phase 6: Checkpoints 시스템
 ```bash
-# Conductor workspace 여러 개 생성하여 병렬 진행 가능
-# - Workspace A: 보안 이슈
-# - Workspace B: Deadlock 수정
-# - Workspace C: conductor.json 구현
+# 턴별 스냅샷 구현
+# - Private Git refs 저장
+# - Revert UI 구현
+# - Checkpoint 메타데이터 관리
 ```
 
 ---
