@@ -11,6 +11,7 @@ using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Dialog;
 using Jinobald.Core.Services.Regions;
 using Jinobald.Core.Services.Toast;
+using Serilog;
 
 namespace Convalonia.ViewModels;
 
@@ -24,6 +25,7 @@ public partial class SetupViewModel : ViewModelBase
     private readonly IDialogService _dialogService;
     private readonly IToastService _toastService;
     private readonly IRegionManager _regionManager;
+    private readonly ILogger _logger = Log.ForContext<SetupViewModel>();
 
     [ObservableProperty]
     private bool _isClaudeCodeInstalled;
@@ -250,9 +252,10 @@ public partial class SetupViewModel : ViewModelBase
 
     private async Task<bool> ConfirmAsync(string title, string message)
     {
-        // TODO: Implement proper confirmation dialog
-        // For now, auto-confirm
+        // TODO: Implement proper confirmation dialog with custom ConfirmationDialog view
+        // For now, show toast and auto-confirm for non-destructive operations
         _toastService.ShowInfo($"{title}: {message}");
+        _logger.Information("User confirmation required: {Title} - {Message}", title, message);
         await Task.CompletedTask;
         return true;
     }

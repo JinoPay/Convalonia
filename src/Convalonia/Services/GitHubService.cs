@@ -1258,5 +1258,36 @@ public class GitHubService : IGitService
         }
     }
 
+    /// <summary>
+    /// Checks if GitHub CLI (gh) is installed
+    /// </summary>
+    public async Task<bool> IsGitHubCliInstalledAsync()
+    {
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "gh",
+                Arguments = "--version",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return false;
+
+            await process.WaitForExitAsync();
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.Debug(ex, "GitHub CLI is not installed or not accessible");
+            return false;
+        }
+    }
+
     #endregion
 }
