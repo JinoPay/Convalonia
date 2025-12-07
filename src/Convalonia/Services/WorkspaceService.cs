@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Convalonia.Models;
 using Convalonia.Utils;
+using Convalonia.Validators;
+using FluentValidation;
 
 namespace Convalonia.Services;
 
@@ -17,20 +19,23 @@ public class WorkspaceService : IWorkspaceService
     private readonly string _baseWorkspacePath;
     private readonly IGitService _gitHubService;
     private readonly IRepositoryService _repositoryService;
+    private readonly IValidator<Workspace> _workspaceValidator;
 
     public WorkspaceService() : this(
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             ".ConvaloniaWorkspaces"),
-        new GitHubService())
+        new GitHubService(),
+        new WorkspaceValidator())
     {
     }
 
-    public WorkspaceService(string baseWorkspacePath, IGitService gitHubService)
+    public WorkspaceService(string baseWorkspacePath, IGitService gitHubService, IValidator<Workspace> workspaceValidator)
     {
         _baseWorkspacePath = baseWorkspacePath;
         _gitHubService = gitHubService;
-        _repositoryService = new RepositoryService(gitHubService);
+        _workspaceValidator = workspaceValidator;
+        _repositoryService = new RepositoryService(gitHubService, new RepositoryValidator());
 
         // Create base workspace directory if it doesn't exist
         if (!Directory.Exists(_baseWorkspacePath))
@@ -119,6 +124,14 @@ public class WorkspaceService : IWorkspaceService
         if (!gitInitialized)
         {
             Directory.CreateDirectory(workspacePath);
+        }
+
+        // Validate workspace before adding
+        var validationResult = await _workspaceValidator.ValidateAsync(workspace);
+        if (!validationResult.IsValid)
+        {
+            var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+            throw new ValidationException($"Workspace validation failed: {errors}");
         }
 
         _workspaces.Add(workspace);

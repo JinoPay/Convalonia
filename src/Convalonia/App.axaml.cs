@@ -7,6 +7,9 @@ using Jinobald.Core.Ioc;
 using Convalonia.Views;
 using Convalonia.ViewModels;
 using Convalonia.Services;
+using Convalonia.Models;
+using Convalonia.Validators;
+using FluentValidation;
 using Serilog;
 using Serilog.Events;
 
@@ -65,6 +68,13 @@ public partial class App : ApplicationBase<MainWindow>
 
     public override void RegisterTypes(IContainerRegistry containerRegistry)
     {
+        // Register Validators
+        containerRegistry.RegisterSingleton<IValidator<Repository>, RepositoryValidator>();
+        containerRegistry.RegisterSingleton<IValidator<Workspace>, WorkspaceValidator>();
+        containerRegistry.RegisterSingleton<IValidator<Agent>, AgentValidator>();
+        containerRegistry.RegisterSingleton<IValidator<string>, GitCommitMessageValidator>();
+        containerRegistry.RegisterSingleton<IValidator<CommitMessageRequest>, CommitMessageRequestValidator>();
+
         // Register Services with interfaces
         containerRegistry.RegisterSingleton<IGitService, GitHubService>();
         containerRegistry.RegisterSingleton<IWorkspaceService, WorkspaceService>();
