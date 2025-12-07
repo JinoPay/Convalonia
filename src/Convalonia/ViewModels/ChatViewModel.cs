@@ -1,21 +1,23 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Models;
 using Convalonia.Services;
-using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Toast;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Convalonia.ViewModels;
 
 /// <summary>
 /// ViewModel for chat interface with a Claude agent
 /// </summary>
-public partial class ChatViewModel : ViewModelBase
+public partial class ChatViewModel : ReactiveObject, IActivatableViewModel, IDisposable
 {
     private readonly Agent _agent;
     private readonly Workspace _workspace;
@@ -28,28 +30,30 @@ public partial class ChatViewModel : ViewModelBase
     private bool _isFirstMessage = true;
     private int _currentTurn = 0;
 
-    [ObservableProperty]
+    public ViewModelActivator Activator { get; }
+
+    [Reactive]
     private ObservableCollection<Message> _messages;
 
-    [ObservableProperty]
+    [Reactive]
     private string _inputMessage = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isSending = false;
 
-    [ObservableProperty]
+    [Reactive]
     private AgentStatus _agentStatus;
 
-    [ObservableProperty]
+    [Reactive]
     private string _agentName;
 
-    [ObservableProperty]
+    [Reactive]
     private string _statusText = "Idle";
 
-    [ObservableProperty]
+    [Reactive]
     private string _terminalOutput = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _showTerminal = true;
 
     /// <summary>
@@ -79,9 +83,7 @@ public partial class ChatViewModel : ViewModelBase
         _checkpointService = checkpointService;
         _agentPersistence = agentPersistence;
 
-        // Subscribe to terminal output
-        _claudeCodeService.OutputReceived += OnOutputReceived;
-        _claudeCodeService.ErrorReceived += OnErrorReceived;
+        Activator = new ViewModelActivator();
 
         _messages = agent.Messages;
         _agentName = agent.Name;
@@ -91,6 +93,26 @@ public partial class ChatViewModel : ViewModelBase
         _messages.CollectionChanged += OnMessagesCollectionChanged;
 
         UpdateStatusText();
+
+        // Set up activator for lifecycle management
+        this.WhenActivated(disposables =>
+        {
+            // Subscribe to terminal output
+            disposables.Add(Observable.FromEventPattern<string>(
+                h => _claudeCodeService.OutputReceived += h,
+                h => _claudeCodeService.OutputReceived -= h)
+                .Subscribe(evt => OnOutputReceived(this, evt.EventArgs)));
+
+            disposables.Add(Observable.FromEventPattern<string>(
+                h => _claudeCodeService.ErrorReceived += h,
+                h => _claudeCodeService.ErrorReceived -= h)
+                .Subscribe(evt => OnErrorReceived(this, evt.EventArgs)));
+
+            disposables.Add(Disposable.Create(() =>
+            {
+                _claudeCodeService.Dispose();
+            }));
+        });
     }
 
     /// <summary>
@@ -112,7 +134,7 @@ public partial class ChatViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task SendMessageAsync()
     {
         if (string.IsNullOrWhiteSpace(InputMessage))
@@ -232,13 +254,13 @@ public partial class ChatViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private void CancelSending()
     {
         _cancellationTokenSource?.Cancel();
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task ClearChatAsync()
     {
         _messages.Clear();
@@ -252,13 +274,13 @@ public partial class ChatViewModel : ViewModelBase
         await Task.CompletedTask;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private void ToggleTerminal()
     {
         ShowTerminal = !ShowTerminal;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task StopSessionAsync()
     {
         await _claudeCodeService.StopSessionAsync();
@@ -278,7 +300,7 @@ public partial class ChatViewModel : ViewModelBase
         TerminalOutput += $"[ERROR] {error}" + Environment.NewLine;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task RegenerateResponseAsync()
     {
         if (_messages.Count < 1)
@@ -293,12 +315,10 @@ public partial class ChatViewModel : ViewModelBase
         }
     }
 
-    public new void Dispose()
+    public void Dispose()
     {
-        _claudeCodeService.OutputReceived -= OnOutputReceived;
-        _claudeCodeService.ErrorReceived -= OnErrorReceived;
-        _claudeCodeService.Dispose();
-        base.Dispose();
+        _messages.CollectionChanged -= OnMessagesCollectionChanged;
+        _cancellationTokenSource?.Dispose();
     }
 
     private void UpdateStatusText()
@@ -318,7 +338,7 @@ public partial class ChatViewModel : ViewModelBase
     /// <summary>
     /// Reverts to a specific checkpoint (turn)
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand(CanExecute = nameof(CanRevertToCheckpoint))]
     private async Task RevertToCheckpointAsync(int turnNumber)
     {
         if (_checkpointService == null)

@@ -1,16 +1,14 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using Avalonia.Platform.Storage;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Services;
 using Convalonia.Views;
-using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Dialog;
 using Jinobald.Core.Services.Regions;
 using Jinobald.Core.Services.Toast;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 using Serilog;
 
 namespace Convalonia.ViewModels;
@@ -18,7 +16,7 @@ namespace Convalonia.ViewModels;
 /// <summary>
 /// ViewModel for initial setup screen when no repositories exist
 /// </summary>
-public partial class SetupViewModel : ViewModelBase
+public partial class SetupViewModel : ReactiveObject
 {
     private readonly RepositoryManagementService _repositoryManagementService;
     private readonly GitHubService _gitHubService;
@@ -27,16 +25,16 @@ public partial class SetupViewModel : ViewModelBase
     private readonly IRegionManager _regionManager;
     private readonly ILogger _logger = Log.ForContext<SetupViewModel>();
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isClaudeCodeInstalled;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isCheckingClaudeCode;
 
-    [ObservableProperty]
+    [Reactive]
     private string _gitUrl = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isCloningRepository;
 
     public SetupViewModel(
@@ -75,7 +73,7 @@ public partial class SetupViewModel : ViewModelBase
     /// <summary>
     /// Opens a folder picker to select a local git repository
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task SelectLocalRepositoryAsync()
     {
         if (!IsClaudeCodeInstalled)
@@ -120,7 +118,7 @@ public partial class SetupViewModel : ViewModelBase
     /// <summary>
     /// Clones a repository from a git URL
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CloneFromUrlAsync()
     {
         if (!IsClaudeCodeInstalled)
@@ -172,7 +170,7 @@ public partial class SetupViewModel : ViewModelBase
     /// <summary>
     /// Creates a new project with git initialization
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreateNewProjectAsync()
     {
         if (!IsClaudeCodeInstalled)

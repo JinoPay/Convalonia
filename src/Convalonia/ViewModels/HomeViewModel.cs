@@ -1,25 +1,24 @@
 using System.Linq;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Services;
 using Jinobald.Core.Services.Toast;
-using Jinobald.Core.Mvvm;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Convalonia.ViewModels;
 
-public partial class HomeViewModel : ViewModelBase
+public partial class HomeViewModel : ReactiveObject
 {
     private readonly IToastService _toastService;
     private readonly WorkspaceService _workspaceService;
 
-    [ObservableProperty]
+    [Reactive]
     private int _totalWorkspaces = 0;
 
-    [ObservableProperty]
+    [Reactive]
     private int _totalAgents = 0;
 
-    [ObservableProperty]
+    [Reactive]
     private int _activeTasks = 0;
 
     public HomeViewModel(
@@ -32,14 +31,14 @@ public partial class HomeViewModel : ViewModelBase
         UpdateStats();
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreateWorkspaceAsync()
     {
         _toastService.ShowInfo("Please use the Workspaces view to create new workspaces");
         await Task.CompletedTask;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task ViewWorkspacesAsync()
     {
         _toastService.ShowInfo("Please navigate to Workspaces view");

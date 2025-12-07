@@ -1,15 +1,15 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Models;
 using Convalonia.Services;
 using Convalonia.Views;
-using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Regions;
 using Jinobald.Core.Services.Toast;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 using Serilog;
 
 namespace Convalonia.ViewModels;
@@ -17,7 +17,7 @@ namespace Convalonia.ViewModels;
 /// <summary>
 /// Unified main view model that combines repository list, workspace, and file management
 /// </summary>
-public partial class UnifiedMainViewModel : ViewModelBase
+public partial class UnifiedMainViewModel : ReactiveObject
 {
     private readonly RepositoryManagementService _repositoryManagementService;
     private readonly WorkspaceService _workspaceService;
@@ -31,31 +31,31 @@ public partial class UnifiedMainViewModel : ViewModelBase
     private readonly IAgentPersistenceService _agentPersistence;
     private readonly ILogger _logger = Log.ForContext<UnifiedMainViewModel>();
 
-    [ObservableProperty]
+    [Reactive]
     private ObservableCollection<SourceRepository> _repositories;
 
-    [ObservableProperty]
+    [Reactive]
     private SourceRepository? _selectedRepository;
 
-    [ObservableProperty]
+    [Reactive]
     private Workspace? _selectedWorkspace;
 
-    [ObservableProperty]
+    [Reactive]
     private Agent? _selectedAgent;
 
-    [ObservableProperty]
+    [Reactive]
     private ChatViewModel? _selectedAgentChatViewModel;
 
-    [ObservableProperty]
+    [Reactive]
     private DiffViewerViewModel? _diffViewerViewModel;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isTerminalVisible;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isRunScriptRunning;
 
-    [ObservableProperty]
+    [Reactive]
     private string _selectedMainTab = "Chat";
 
     /// <summary>
@@ -94,6 +94,21 @@ public partial class UnifiedMainViewModel : ViewModelBase
         _workspacePersistence = workspacePersistence;
         _agentPersistence = agentPersistence;
         _repositories = _repositoryManagementService.Repositories;
+
+        // Subscribe to property changes
+        this.WhenAnyValue(x => x.SelectedWorkspace)
+            .Subscribe(async value =>
+            {
+                await SaveSelectedWorkspaceAsync();
+                UpdateWorkspaceRelatedProperties(value);
+            });
+
+        this.WhenAnyValue(x => x.SelectedAgent)
+            .Subscribe(async value =>
+            {
+                await SaveSelectedAgentAsync();
+                UpdateSelectedAgentChatViewModel(value);
+            });
 
         // Initialize and restore state
         _ = InitializeAsync();
@@ -186,24 +201,6 @@ public partial class UnifiedMainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Save workspace state when property changes
-    /// </summary>
-    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        base.OnPropertyChanged(e);
-
-        // Save state when selection changes
-        if (e.PropertyName == nameof(SelectedWorkspace))
-        {
-            _ = SaveSelectedWorkspaceAsync();
-        }
-        else if (e.PropertyName == nameof(SelectedAgent))
-        {
-            _ = SaveSelectedAgentAsync();
-        }
-    }
-
-    /// <summary>
     /// Save currently selected workspace
     /// </summary>
     private async Task SaveSelectedWorkspaceAsync()
@@ -259,7 +256,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Adds a new repository
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task AddRepositoryAsync()
     {
         // Navigate to setup view for adding repository
@@ -269,7 +266,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Removes a repository
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task RemoveRepositoryAsync(SourceRepository repository)
     {
         if (repository == null) return;
@@ -293,7 +290,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Creates a new workspace for a repository
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreateWorkspaceForRepositoryAsync(SourceRepository repository)
     {
         if (repository == null) return;
@@ -318,7 +315,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Selects a workspace
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private void SelectWorkspace(Workspace workspace)
     {
         if (workspace == null) return;
@@ -340,7 +337,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Deletes a workspace
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task DeleteWorkspaceAsync(Workspace workspace)
     {
         if (workspace == null) return;
@@ -376,7 +373,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Creates a new chat (agent) in the selected workspace
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreateNewChatAsync()
     {
         if (SelectedWorkspace == null) return;
@@ -411,7 +408,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Selects a chat (agent)
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private void SelectChat(Agent agent)
     {
         SelectedAgent = agent;
@@ -420,7 +417,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Deletes an agent
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task DeleteAgentAsync(Agent agent)
     {
         if (agent == null || SelectedWorkspace == null) return;
@@ -451,7 +448,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Opens the workspace folder
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task OpenWorkspaceFolderAsync()
     {
         if (SelectedWorkspace == null) return;
@@ -475,7 +472,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Opens settings
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private void OpenSettings()
     {
         _toastService.ShowInfo("설정 화면은 곧 구현됩니다");
@@ -484,7 +481,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Runs the workspace script (from conductor.json)
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task RunWorkspaceAsync()
     {
         if (SelectedWorkspace == null) return;
@@ -508,7 +505,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Stops the running workspace script
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private void StopWorkspace()
     {
         if (SelectedWorkspace == null) return;
@@ -528,7 +525,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Toggles terminal visibility
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private void ToggleTerminal()
     {
         IsTerminalVisible = !IsTerminalVisible;
@@ -537,7 +534,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Updates run script status and diff viewer when workspace changes
     /// </summary>
-    partial void OnSelectedWorkspaceChanged(Workspace? value)
+    private void UpdateWorkspaceRelatedProperties(Workspace? value)
     {
         if (value != null)
         {
@@ -558,7 +555,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Switches to the Files tab
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private void ShowDiffViewer()
     {
         SelectedMainTab = "Files";
@@ -571,7 +568,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Creates a pull request for the current workspace
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreatePullRequestAsync()
     {
         if (SelectedWorkspace == null)
@@ -747,7 +744,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
     /// <summary>
     /// Updates selected agent chat view model when agent changes
     /// </summary>
-    partial void OnSelectedAgentChanged(Agent? value)
+    private void UpdateSelectedAgentChatViewModel(Agent? value)
     {
         // Unsubscribe from previous chat view model
         if (SelectedAgentChatViewModel != null)

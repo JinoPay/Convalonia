@@ -1,51 +1,52 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Models;
 using Convalonia.Services;
 using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Toast;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Convalonia.ViewModels;
 
 /// <summary>
 /// ViewModel for a single workspace with multiple agents
 /// </summary>
-public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
+public partial class WorkspaceViewModel : ReactiveObject, INavigationAware
 {
     private Workspace? _workspace;
     private readonly WorkspaceService _workspaceService;
     private readonly IToastService _toastService;
     private readonly IClaudeCodeServiceFactory _claudeCodeServiceFactory;
 
-    [ObservableProperty]
+    [Reactive]
     private ObservableCollection<Agent> _agents = new();
 
-    [ObservableProperty]
+    [Reactive]
     private Agent? _selectedAgent;
 
-    [ObservableProperty]
+    [Reactive]
     private ObservableCollection<Repository> _repositories = new();
 
-    [ObservableProperty]
+    [Reactive]
     private Repository? _selectedRepository;
 
-    [ObservableProperty]
+    [Reactive]
     private string _workspaceName = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private string _workspacePath = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private string? _currentBranch;
 
-    [ObservableProperty]
+    [Reactive]
     private WorkspaceStatus _status;
 
-    [ObservableProperty]
+    [Reactive]
     private ChatViewModel? _selectedAgentChatViewModel;
 
     public WorkspaceViewModel(
@@ -56,6 +57,10 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         _workspaceService = workspaceService;
         _toastService = toastService;
         _claudeCodeServiceFactory = claudeCodeServiceFactory;
+
+        // Subscribe to property changes
+        this.WhenAnyValue(x => x.SelectedAgent)
+            .Subscribe(value => UpdateSelectedAgentChatViewModel(value));
     }
 
     public async Task OnNavigatedToAsync(NavigationContext context)
@@ -103,7 +108,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         }
     }
 
-    partial void OnSelectedAgentChanged(Agent? value)
+    private void UpdateSelectedAgentChatViewModel(Agent? value)
     {
         // Unsubscribe from previous chat view model
         if (SelectedAgentChatViewModel != null)
@@ -136,7 +141,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreateAgentAsync()
     {
         if (_workspace == null)
@@ -166,7 +171,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         await Task.CompletedTask;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task DeleteAgentAsync(Agent agent)
     {
         if (agent == null)
@@ -190,13 +195,13 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         await Task.CompletedTask;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private void SelectAgent(Agent agent)
     {
         SelectedAgent = agent;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task StopAllAgentsAsync()
     {
         try
@@ -219,7 +224,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         await Task.CompletedTask;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task OpenWorkspaceFolderAsync()
     {
         try
@@ -238,7 +243,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         await Task.CompletedTask;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task AddRepositoryAsync()
     {
         if (_workspace == null)
@@ -258,7 +263,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         await Task.CompletedTask;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task RemoveRepositoryAsync(Repository repository)
     {
         if (_workspace == null || repository == null)
@@ -280,7 +285,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task RefreshRepositoryStatusAsync(Repository repository)
     {
         if (repository == null)
@@ -297,7 +302,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task OpenRepositoryFolderAsync(Repository repository)
     {
         if (repository == null)

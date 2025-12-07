@@ -2,38 +2,37 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Models;
 using Convalonia.Services;
-using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Toast;
 using Jinobald.Core.Services.Regions;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Convalonia.ViewModels;
 
 /// <summary>
 /// ViewModel for managing the list of workspaces
 /// </summary>
-public partial class WorkspaceListViewModel : ViewModelBase
+public partial class WorkspaceListViewModel : ReactiveObject
 {
     private readonly WorkspaceService _workspaceService;
     private readonly IToastService _toastService;
     private readonly IRegionManager _regionManager;
 
-    [ObservableProperty]
+    [Reactive]
     private ObservableCollection<Workspace> _workspaces;
 
-    [ObservableProperty]
+    [Reactive]
     private Workspace? _selectedWorkspace;
 
-    [ObservableProperty]
+    [Reactive]
     private string _newWorkspaceName = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private string _gitRepositoryUrl = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isCreatingWorkspace = false;
 
     public WorkspaceListViewModel(
@@ -47,7 +46,7 @@ public partial class WorkspaceListViewModel : ViewModelBase
         _workspaces = _workspaceService.Workspaces;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreateWorkspaceAsync()
     {
         IsCreatingWorkspace = true;
@@ -89,7 +88,7 @@ public partial class WorkspaceListViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task DeleteWorkspaceAsync(Workspace workspace)
     {
         if (workspace == null)
@@ -111,7 +110,7 @@ public partial class WorkspaceListViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task SelectWorkspaceAsync(Workspace workspace)
     {
         SelectedWorkspace = workspace;
@@ -121,7 +120,7 @@ public partial class WorkspaceListViewModel : ViewModelBase
         await _regionManager.NavigateAsync<Views.WorkspaceView>("MainContentRegion", workspace.Id);
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private void RefreshWorkspaces()
     {
         _toastService.ShowInfo("Workspaces refreshed");

@@ -2,40 +2,39 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Models;
 using Convalonia.Services;
-using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Toast;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Convalonia.ViewModels;
 
 /// <summary>
 /// ViewModel for adding a repository to a workspace
 /// </summary>
-public partial class AddRepositoryViewModel : ViewModelBase
+public partial class AddRepositoryViewModel : ReactiveObject
 {
     private readonly Workspace _workspace;
     private readonly RepositoryService _repositoryService;
     private readonly IToastService _toastService;
 
-    [ObservableProperty]
+    [Reactive]
     private string _selectedMethod = "OpenProject"; // OpenProject, CloneFromUrl, QuickStart
 
-    [ObservableProperty]
+    [Reactive]
     private string _localProjectPath = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private string _gitUrl = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private string _branchName = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _searchArchivedBranches = false;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isProcessing = false;
 
     public AddRepositoryViewModel(
@@ -48,7 +47,7 @@ public partial class AddRepositoryViewModel : ViewModelBase
         _toastService = toastService;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task BrowseProjectAsync()
     {
         // This will be implemented with Avalonia file picker
@@ -56,7 +55,7 @@ public partial class AddRepositoryViewModel : ViewModelBase
         await Task.CompletedTask;
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task AddRepositoryAsync()
     {
         IsProcessing = true;
@@ -128,7 +127,7 @@ public partial class AddRepositoryViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private void SelectMethod(string method)
     {
         SelectedMethod = method;

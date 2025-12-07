@@ -1,14 +1,14 @@
-using CommunityToolkit.Mvvm.ComponentModel;
 using Convalonia.Services;
-using Jinobald.Core.Mvvm;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Convalonia.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ReactiveObject
 {
     private readonly WorkspaceService _workspaceService;
 
-    [ObservableProperty]
+    [Reactive]
     private object? _currentView;
 
     public MainWindowViewModel(WorkspaceService workspaceService)

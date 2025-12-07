@@ -1,30 +1,29 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Models;
 using Convalonia.Services;
 using Convalonia.Views;
-using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Regions;
 using Jinobald.Core.Services.Toast;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Convalonia.ViewModels;
 
 /// <summary>
 /// ViewModel for managing the list of source repositories
 /// </summary>
-public partial class RepositoryListViewModel : ViewModelBase
+public partial class RepositoryListViewModel : ReactiveObject
 {
     private readonly RepositoryManagementService _repositoryManagementService;
     private readonly IToastService _toastService;
     private readonly IRegionManager _regionManager;
 
-    [ObservableProperty]
+    [Reactive]
     private ObservableCollection<SourceRepository> _repositories;
 
-    [ObservableProperty]
+    [Reactive]
     private SourceRepository? _selectedRepository;
 
     public RepositoryListViewModel(
@@ -41,7 +40,7 @@ public partial class RepositoryListViewModel : ViewModelBase
     /// <summary>
     /// Navigates to setup screen to add a new repository
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task AddRepositoryAsync()
     {
         await _regionManager.NavigateAsync<SetupView>("MainContentRegion");
@@ -50,7 +49,7 @@ public partial class RepositoryListViewModel : ViewModelBase
     /// <summary>
     /// Removes a repository
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task RemoveRepositoryAsync(SourceRepository repository)
     {
         if (repository == null) return;
@@ -74,7 +73,7 @@ public partial class RepositoryListViewModel : ViewModelBase
     /// <summary>
     /// Selects a repository and shows its workspaces
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task SelectRepositoryAsync(SourceRepository repository)
     {
         SelectedRepository = repository;
@@ -87,7 +86,7 @@ public partial class RepositoryListViewModel : ViewModelBase
     /// <summary>
     /// Creates a new workspace for a repository
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreateWorkspaceAsync(SourceRepository repository)
     {
         if (repository == null) return;
@@ -106,7 +105,7 @@ public partial class RepositoryListViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    [ReactiveCommand]
     private void RefreshRepositories()
     {
         _toastService.ShowInfo("Repositories refreshed");
@@ -115,7 +114,7 @@ public partial class RepositoryListViewModel : ViewModelBase
     /// <summary>
     /// Opens a workspace directly from the repository list
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task OpenWorkspaceAsync(Workspace workspace)
     {
         if (workspace == null) return;

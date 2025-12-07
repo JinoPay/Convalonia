@@ -2,40 +2,39 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Convalonia.Models;
 using Convalonia.Services;
 using Convalonia.Views;
-using Jinobald.Core.Mvvm;
 using Jinobald.Core.Services.Regions;
 using Jinobald.Core.Services.Toast;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Convalonia.ViewModels;
 
 /// <summary>
 /// ViewModel for showing a repository's workspaces
 /// </summary>
-public partial class RepositoryDetailViewModel : ViewModelBase
+public partial class RepositoryDetailViewModel : ReactiveObject
 {
     private readonly RepositoryManagementService _repositoryManagementService;
     private readonly WorkspaceService _workspaceService;
     private readonly IToastService _toastService;
     private readonly IRegionManager _regionManager;
 
-    [ObservableProperty]
+    [Reactive]
     private SourceRepository? _repository;
 
-    [ObservableProperty]
+    [Reactive]
     private ObservableCollection<Workspace> _workspaces = new();
 
-    [ObservableProperty]
+    [Reactive]
     private Workspace? _selectedWorkspace;
 
-    [ObservableProperty]
+    [Reactive]
     private string _newWorkspaceName = string.Empty;
 
-    [ObservableProperty]
+    [Reactive]
     private bool _isCreatingWorkspace = false;
 
     public RepositoryDetailViewModel(
@@ -64,7 +63,7 @@ public partial class RepositoryDetailViewModel : ViewModelBase
     /// <summary>
     /// Goes back to repository list
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task BackToRepositoryListAsync()
     {
         await _regionManager.NavigateAsync<RepositoryListView>("MainContentRegion");
@@ -73,7 +72,7 @@ public partial class RepositoryDetailViewModel : ViewModelBase
     /// <summary>
     /// Creates a new workspace for this repository
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task CreateWorkspaceAsync()
     {
         if (Repository == null) return;
@@ -103,7 +102,7 @@ public partial class RepositoryDetailViewModel : ViewModelBase
     /// <summary>
     /// Deletes a workspace
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task DeleteWorkspaceAsync(Workspace workspace)
     {
         if (workspace == null || Repository == null) return;
@@ -128,7 +127,7 @@ public partial class RepositoryDetailViewModel : ViewModelBase
     /// <summary>
     /// Selects a workspace and navigates to it
     /// </summary>
-    [RelayCommand]
+    [ReactiveCommand]
     private async Task SelectWorkspaceAsync(Workspace workspace)
     {
         SelectedWorkspace = workspace;

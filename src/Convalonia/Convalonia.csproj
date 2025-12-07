@@ -21,6 +21,12 @@
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="Jinobald.Avalonia" Version="1.0.1" />
     <PackageReference Include="Jinobald.Core" Version="1.0.1" />
+    <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
+    <PackageReference Include="ReactiveUI.SourceGenerators" Version="2.5.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.Reactive" Version="6.1.0" />
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
