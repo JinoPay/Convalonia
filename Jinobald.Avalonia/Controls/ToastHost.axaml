@@ -1,0 +1,124 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Jinobald.Avalonia.Controls"
+        xmlns:toast="using:Jinobald.Core.Services.Toast">
+
+    <Design.PreviewWith>
+        <controls:ToastHost Width="400" Height="300" />
+    </Design.PreviewWith>
+
+    <Style Selector="controls|ToastHost">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <!-- 토스트 컨테이너 -->
+                    <ItemsControl Items="{TemplateBinding Toasts}"
+                                  Margin="16">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="8" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <!-- 기본 토스트 템플릿 (사용자가 ItemTemplate을 설정하여 커스터마이징 가능) -->
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="toast:ToastMessage">
+                                <Border CornerRadius="8"
+                                        Padding="16,12"
+                                        MinWidth="250"
+                                        MaxWidth="400"
+                                        BoxShadow="0 4 12 0 #40000000"
+                                        Classes.success="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static toast:ToastType.Success}}"
+                                        Classes.info="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static toast:ToastType.Info}}"
+                                        Classes.warning="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static toast:ToastType.Warning}}"
+                                        Classes.error="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static toast:ToastType.Error}}">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <!-- 콘텐츠 -->
+                                        <StackPanel Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="14"
+                                                       IsVisible="{Binding Title, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                            <TextBlock Text="{Binding Message}"
+                                                       FontSize="13"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+
+                                        <!-- 닫기 버튼 (플레이스홀더 - 실제 기능은 ToastService에서 구현) -->
+                                        <Button Grid.Column="1"
+                                                Width="20"
+                                                Height="20"
+                                                Margin="12,0,0,0"
+                                                Padding="0"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                VerticalAlignment="Top"
+                                                Content="×"
+                                                FontSize="18"
+                                                FontWeight="Bold" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- 토스트 타입별 스타일 -->
+    <Style Selector="controls|ToastHost Border.success">
+        <Setter Property="Background" Value="#E8F5E9" />
+        <Setter Property="BorderBrush" Value="#4CAF50" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="controls|ToastHost Border.info">
+        <Setter Property="Background" Value="#E3F2FD" />
+        <Setter Property="BorderBrush" Value="#2196F3" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="controls|ToastHost Border.warning">
+        <Setter Property="Background" Value="#FFF3E0" />
+        <Setter Property="BorderBrush" Value="#FF9800" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="controls|ToastHost Border.error">
+        <Setter Property="Background" Value="#FFEBEE" />
+        <Setter Property="BorderBrush" Value="#F44336" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- Position별 정렬 -->
+    <Style Selector="controls|ToastHost[Position=TopRight] > :is(Control) > Panel > ItemsControl">
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+
+    <Style Selector="controls|ToastHost[Position=TopLeft] > :is(Control) > Panel > ItemsControl">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+
+    <Style Selector="controls|ToastHost[Position=TopCenter] > :is(Control) > Panel > ItemsControl">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+
+    <Style Selector="controls|ToastHost[Position=BottomRight] > :is(Control) > Panel > ItemsControl">
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+    </Style>
+
+    <Style Selector="controls|ToastHost[Position=BottomLeft] > :is(Control) > Panel > ItemsControl">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+    </Style>
+
+    <Style Selector="controls|ToastHost[Position=BottomCenter] > :is(Control) > Panel > ItemsControl">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+    </Style>
+</Styles>
