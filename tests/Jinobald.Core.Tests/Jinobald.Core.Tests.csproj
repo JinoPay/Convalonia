@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Jinobald.Core\Jinobald.Core.csproj" />
+    <ProjectReference Include="..\..\libs\Jinobald.Core\Jinobald.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

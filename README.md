@@ -14,29 +14,39 @@ Conductor와 유사한 Claude 병렬 작업 프로그램입니다. 여러 개의
 ## 프로젝트 구조
 
 ```
-Convalonia/
-├── Models/                      # 데이터 모델
-│   ├── Workspace.cs            # 워크스페이스 정보
-│   ├── Agent.cs                # Claude 에이전트 정보
-│   ├── Message.cs              # 대화 메시지
-│   └── Task.cs                 # 작업 정보
-├── Services/                    # 비즈니스 로직
-│   ├── WorkspaceService.cs     # 워크스페이스 관리
-│   ├── ClaudeCodeService.cs    # Claude Code CLI 통신
-│   ├── GitHubService.cs        # GitHub 연동
-│   └── FileSystemService.cs    # 파일 시스템 관리
-├── ViewModels/                  # MVVM 뷰모델
-│   ├── MainWindowViewModel.cs
-│   ├── WorkspaceListViewModel.cs
-│   ├── WorkspaceViewModel.cs
-│   ├── ChatViewModel.cs
-│   └── HomeViewModel.cs
-└── Views/                       # UI 뷰
-    ├── WorkspaceListView.axaml
-    ├── WorkspaceView.axaml
-    ├── ChatView.axaml
-    └── HomeView.axaml
+guangzhou/
+├── src/                         # 소스 코드
+│   └── Convalonia/             # 메인 애플리케이션
+│       ├── Models/             # 데이터 모델
+│       ├── Services/           # 비즈니스 로직
+│       ├── ViewModels/         # MVVM 뷰모델
+│       ├── Views/              # UI 뷰
+│       └── Utils/              # 유틸리티
+├── libs/                        # 라이브러리
+│   ├── Jinobald.Core/          # 코어 프레임워크
+│   ├── Jinobald.Avalonia/      # Avalonia UI 프레임워크
+│   └── Jinobald.Wpf/           # WPF 프레임워크
+├── tests/                       # 테스트 프로젝트
+│   ├── Jinobald.Core.Tests/
+│   ├── Jinobald.Avalonia.Tests/
+│   └── Jinobald.Wpf.Tests/
+└── docs/                        # 문서
+    ├── CONDUCTOR_FEATURES.md
+    ├── MULTI_REPO_IMPLEMENTATION.md
+    ├── REFACTORING_PLAN.md
+    └── WORK_SUMMARY.md
 ```
+
+### 주요 구성요소
+
+**src/Convalonia/** - 메인 애플리케이션
+- **Models/**: Workspace, Agent, Message, Task 등 데이터 모델
+- **Services/**: WorkspaceService, ClaudeCodeService, GitHubService 등 비즈니스 로직
+- **ViewModels/**: MVVM 뷰모델 (MainWindow, WorkspaceList, Workspace, Chat 등)
+- **Views/**: XAML UI 뷰 파일
+
+**libs/** - Jinobald 프레임워크 라이브러리 소스 코드
+- 현재는 NuGet 패키지(v1.0.1)를 사용하지만, 향후 수정이 필요할 경우를 대비한 소스
 
 ## 기술 스택
 
@@ -64,14 +74,17 @@ Claude API 키는 Claude Code CLI가 자동으로 관리하므로 별도 설정�
 ### 1. 프로젝트 빌드
 
 ```bash
-dotnet restore
-dotnet build
+# 메인 애플리케이션 빌드
+dotnet build src/Convalonia/Convalonia.csproj
+
+# 또는 전체 솔루션 빌드 (Mac에서는 WPF 프로젝트 제외됨)
+dotnet build Convalonia.slnx
 ```
 
 ### 2. 실행
 
 ```bash
-dotnet run
+dotnet run --project src/Convalonia/Convalonia.csproj
 ```
 
 ## 사용 방법
