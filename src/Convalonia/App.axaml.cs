@@ -83,6 +83,11 @@ public partial class App : ApplicationBase<MainWindow>
         containerRegistry.RegisterSingleton<IRepositoryManagementService, RepositoryManagementService>();
         containerRegistry.RegisterSingleton<IClaudeCodeServiceFactory, ClaudeCodeServiceFactory>();
 
+        // Register Conductor-specific services
+        containerRegistry.RegisterSingleton<IConductorConfigService, ConductorConfigService>();
+        containerRegistry.RegisterSingleton<IPortAllocator, PortAllocator>();
+        containerRegistry.RegisterSingleton<IScriptExecutor, ScriptExecutor>();
+
         // Also register concrete types for backwards compatibility
         containerRegistry.RegisterSingleton<GitHubService>();
         containerRegistry.RegisterSingleton<WorkspaceService>();

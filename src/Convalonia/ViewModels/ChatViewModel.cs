@@ -49,6 +49,11 @@ public partial class ChatViewModel : ViewModelBase
     private bool _showTerminal = true;
 
     /// <summary>
+    /// Exposes the underlying agent for data binding
+    /// </summary>
+    public Agent Agent => _agent;
+
+    /// <summary>
     /// Event raised when the first user message is sent
     /// Used to trigger workspace auto-renaming
     /// </summary>
