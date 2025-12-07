@@ -1,9 +1,9 @@
 using Avalonia.Controls;
 using Convalonia.Services;
+using Convalonia.Services.Toast;
+using Convalonia.Services.Dialog;
+using Convalonia.Services.Navigation;
 using Convalonia.Views;
-using Jinobald.Core.Services.Dialog;
-using Jinobald.Core.Services.Regions;
-using Jinobald.Core.Services.Toast;
 using Serilog;
 
 namespace Convalonia;

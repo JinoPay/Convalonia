@@ -4,8 +4,8 @@ using System.IO;
 using System.Threading.Tasks;
 using Convalonia.Models;
 using Convalonia.Services;
-using Jinobald.Core.Services.Toast;
-using Jinobald.Core.Services.Regions;
+using Convalonia.Services.Toast;
+using Convalonia.Services.Navigation;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 

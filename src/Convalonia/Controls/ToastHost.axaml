@@ -1,0 +1,38 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Convalonia.Controls"
+        xmlns:toast="using:Convalonia.Services.Toast">
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <controls:ToastHost />
+        </Border>
+    </Design.PreviewWith>
+
+    <Style Selector="controls|ToastHost">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ItemsControl ItemsSource="{TemplateBinding Toasts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="toast:ToastMessage">
+                            <Border Background="{DynamicResource SystemAccentColor}"
+                                    CornerRadius="8"
+                                    Padding="16,12"
+                                    Margin="0,0,0,8"
+                                    BoxShadow="0 2 8 0 #40000000">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{Binding Title}"
+                                              FontWeight="Bold"
+                                              FontSize="14"
+                                              IsVisible="{Binding Title, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    <TextBlock Text="{Binding Message}"
+                                              FontSize="13"
+                                              TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

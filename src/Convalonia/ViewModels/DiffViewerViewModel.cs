@@ -5,7 +5,7 @@ using System.Reactive;
 using System.Threading.Tasks;
 using Convalonia.Models;
 using Convalonia.Services;
-using Jinobald.Core.Services.Toast;
+using Convalonia.Services.Toast;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using Serilog;
