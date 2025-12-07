@@ -2,7 +2,9 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Convalonia.Models;
 using Convalonia.Services.Validation;
+using Convalonia.Validators;
 using Serilog;
 
 namespace Convalonia.Services;
@@ -661,4 +663,297 @@ public class GitHubService : IGitService
 
         return branchName;
     }
+
+    #region Checkpoint Operations
+
+    /// <summary>
+    /// Gets the current commit SHA
+    /// </summary>
+    public async Task<string> GetCurrentCommitShaAsync(string workspacePath)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "rev-parse HEAD",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                throw new InvalidOperationException("Failed to start git process");
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException("Failed to get current commit SHA");
+
+            return output.Trim();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get current commit SHA in {WorkspacePath}", workspacePath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates a Git ref to point to a specific commit
+    /// </summary>
+    public async Task UpdateRefAsync(string workspacePath, string refName, string commitSha)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"update-ref {InputValidator.EscapeGitArgument(refName)} {InputValidator.EscapeGitArgument(commitSha)}",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                throw new InvalidOperationException("Failed to start git process");
+
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                var error = await process.StandardError.ReadToEndAsync();
+                throw new InvalidOperationException($"Failed to update ref: {error}");
+            }
+
+            _logger.Information("Updated ref {RefName} to {CommitSha} in {WorkspacePath}", refName, commitSha, workspacePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to update ref {RefName} in {WorkspacePath}", refName, workspacePath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets the commit SHA that a ref points to
+    /// </summary>
+    public async Task<string?> GetRefAsync(string workspacePath, string refName)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"rev-parse {InputValidator.EscapeGitArgument(refName)}",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                return null;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+                return null;
+
+            return output.Trim();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get ref {RefName} in {WorkspacePath}", refName, workspacePath);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Deletes a Git ref
+    /// </summary>
+    public async Task DeleteRefAsync(string workspacePath, string refName)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"update-ref -d {InputValidator.EscapeGitArgument(refName)}",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                throw new InvalidOperationException("Failed to start git process");
+
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                var error = await process.StandardError.ReadToEndAsync();
+                throw new InvalidOperationException($"Failed to delete ref: {error}");
+            }
+
+            _logger.Information("Deleted ref {RefName} in {WorkspacePath}", refName, workspacePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to delete ref {RefName} in {WorkspacePath}", refName, workspacePath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Performs a hard reset to a specific commit
+    /// </summary>
+    public async Task ResetHardAsync(string workspacePath, string commitSha)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        try
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"reset --hard {InputValidator.EscapeGitArgument(commitSha)}",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+                throw new InvalidOperationException("Failed to start git process");
+
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                var error = await process.StandardError.ReadToEndAsync();
+                throw new InvalidOperationException($"Failed to reset: {error}");
+            }
+
+            _logger.Information("Reset to {CommitSha} in {WorkspacePath}", commitSha, workspacePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to reset to {CommitSha} in {WorkspacePath}", commitSha, workspacePath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Commits all changes (including untracked files) with optional hook skipping
+    /// </summary>
+    public async Task<bool> CommitAllChangesAsync(string workspacePath, string message, bool skipHooks = false)
+    {
+        if (!InputValidator.IsValidPath(workspacePath))
+            throw new ValidationException("workspacePath", "Invalid workspace path");
+
+        // Validate commit message for command injection
+        var validator = new CommitMessageRequestValidator();
+        var validationResult = await validator.ValidateAsync(new CommitMessageRequest(message));
+        if (!validationResult.IsValid)
+            throw new ValidationException("message", string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
+
+        try
+        {
+            // First, add all changes
+            var addProcessInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "add -A",
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using (var addProcess = Process.Start(addProcessInfo))
+            {
+                if (addProcess == null)
+                    return false;
+
+                await addProcess.WaitForExitAsync();
+                if (addProcess.ExitCode != 0)
+                    return false;
+            }
+
+            // Then commit with optional --no-verify
+            var commitArgs = skipHooks
+                ? $"commit --no-verify -m {InputValidator.EscapeGitArgument(message)}"
+                : $"commit -m {InputValidator.EscapeGitArgument(message)}";
+
+            var commitProcessInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = commitArgs,
+                WorkingDirectory = workspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var commitProcess = Process.Start(commitProcessInfo);
+            if (commitProcess == null)
+                return false;
+
+            await commitProcess.WaitForExitAsync();
+
+            if (commitProcess.ExitCode == 0)
+            {
+                _logger.Information("Committed all changes in {WorkspacePath}", workspacePath);
+                return true;
+            }
+
+            // Exit code 1 might mean "nothing to commit"
+            var output = await commitProcess.StandardOutput.ReadToEndAsync();
+            if (output.Contains("nothing to commit"))
+            {
+                _logger.Debug("Nothing to commit in {WorkspacePath}", workspacePath);
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to commit all changes in {WorkspacePath}", workspacePath);
+            return false;
+        }
+    }
+
+    #endregion
 }

@@ -23,6 +23,8 @@ public partial class UnifiedMainViewModel : ViewModelBase
     private readonly IToastService _toastService;
     private readonly IRegionManager _regionManager;
     private readonly IClaudeCodeServiceFactory _claudeCodeServiceFactory;
+    private readonly IScriptExecutor _scriptExecutor;
+    private readonly ICheckpointService _checkpointService;
 
     [ObservableProperty]
     private ObservableCollection<SourceRepository> _repositories;
@@ -39,18 +41,39 @@ public partial class UnifiedMainViewModel : ViewModelBase
     [ObservableProperty]
     private ChatViewModel? _selectedAgentChatViewModel;
 
+    [ObservableProperty]
+    private bool _isTerminalVisible;
+
+    [ObservableProperty]
+    private bool _isRunScriptRunning;
+
+    /// <summary>
+    /// Available AI models for agent selection
+    /// </summary>
+    public ObservableCollection<string> AvailableModels { get; } = new()
+    {
+        "claude-sonnet-4-5-20250929",
+        "claude-opus-4-20250514",
+        "claude-sonnet-3-5-20241022",
+        "claude-haiku-3-5-20241022"
+    };
+
     public UnifiedMainViewModel(
         RepositoryManagementService repositoryManagementService,
         WorkspaceService workspaceService,
         IToastService toastService,
         IRegionManager regionManager,
-        IClaudeCodeServiceFactory claudeCodeServiceFactory)
+        IClaudeCodeServiceFactory claudeCodeServiceFactory,
+        IScriptExecutor scriptExecutor,
+        ICheckpointService checkpointService)
     {
         _repositoryManagementService = repositoryManagementService;
         _workspaceService = workspaceService;
         _toastService = toastService;
         _regionManager = regionManager;
         _claudeCodeServiceFactory = claudeCodeServiceFactory;
+        _scriptExecutor = scriptExecutor;
+        _checkpointService = checkpointService;
         _repositories = _repositoryManagementService.Repositories;
     }
 
@@ -260,6 +283,74 @@ public partial class UnifiedMainViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Runs the workspace script (from conductor.json)
+    /// </summary>
+    [RelayCommand]
+    private async Task RunWorkspaceAsync()
+    {
+        if (SelectedWorkspace == null) return;
+
+        try
+        {
+            IsRunScriptRunning = true;
+            _toastService.ShowInfo($"워크스페이스 '{SelectedWorkspace.Name}' 실행 중...");
+
+            await _scriptExecutor.ExecuteRunScriptAsync(SelectedWorkspace);
+
+            _toastService.ShowSuccess("실행 스크립트 시작됨");
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowError($"실행 실패: {ex.Message}");
+            IsRunScriptRunning = false;
+        }
+    }
+
+    /// <summary>
+    /// Stops the running workspace script
+    /// </summary>
+    [RelayCommand]
+    private void StopWorkspace()
+    {
+        if (SelectedWorkspace == null) return;
+
+        try
+        {
+            _scriptExecutor.StopRunScript(SelectedWorkspace.Id);
+            IsRunScriptRunning = false;
+            _toastService.ShowInfo("실행 스크립트 중지됨");
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowError($"중지 실패: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Toggles terminal visibility
+    /// </summary>
+    [RelayCommand]
+    private void ToggleTerminal()
+    {
+        IsTerminalVisible = !IsTerminalVisible;
+    }
+
+    /// <summary>
+    /// Updates run script status when workspace changes
+    /// </summary>
+    partial void OnSelectedWorkspaceChanged(Workspace? value)
+    {
+        if (value != null)
+        {
+            IsRunScriptRunning = _scriptExecutor.IsRunScriptRunning(value.Id);
+        }
+        else
+        {
+            IsRunScriptRunning = false;
+        }
+    }
+
+    /// <summary>
     /// Updates selected agent chat view model when agent changes
     /// </summary>
     partial void OnSelectedAgentChanged(Agent? value)
@@ -272,7 +363,7 @@ public partial class UnifiedMainViewModel : ViewModelBase
 
         if (value != null && SelectedWorkspace != null)
         {
-            var chatViewModel = new ChatViewModel(value, SelectedWorkspace.Path, _toastService, _claudeCodeServiceFactory);
+            var chatViewModel = new ChatViewModel(value, SelectedWorkspace, _toastService, _claudeCodeServiceFactory, _checkpointService);
             chatViewModel.FirstMessageSent += OnFirstMessageSent;
             SelectedAgentChatViewModel = chatViewModel;
         }

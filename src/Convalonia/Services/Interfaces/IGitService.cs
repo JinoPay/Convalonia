@@ -23,4 +23,12 @@ public interface IGitService
     Task<string?> GetRemoteOriginAsync(string workspacePath);
     Task<bool> HasUncommittedChangesAsync(string workspacePath);
     Task<string?> GetLastCommitHashAsync(string workspacePath);
+
+    // Checkpoint-specific operations
+    Task<string> GetCurrentCommitShaAsync(string workspacePath);
+    Task UpdateRefAsync(string workspacePath, string refName, string commitSha);
+    Task<string?> GetRefAsync(string workspacePath, string refName);
+    Task DeleteRefAsync(string workspacePath, string refName);
+    Task ResetHardAsync(string workspacePath, string commitSha);
+    Task<bool> CommitAllChangesAsync(string workspacePath, string message, bool skipHooks = false);
 }

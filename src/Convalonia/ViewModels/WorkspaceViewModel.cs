@@ -113,7 +113,7 @@ public partial class WorkspaceViewModel : ViewModelBase, INavigationAware
 
         if (value != null && _workspace != null)
         {
-            var chatViewModel = new ChatViewModel(value, _workspace.Path, _toastService, _claudeCodeServiceFactory);
+            var chatViewModel = new ChatViewModel(value, _workspace, _toastService, _claudeCodeServiceFactory);
             chatViewModel.FirstMessageSent += OnFirstMessageSent;
             SelectedAgentChatViewModel = chatViewModel;
         }
