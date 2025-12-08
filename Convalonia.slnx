@@ -2,14 +2,4 @@
   <Folder Name="/src/">
     <Project Path="src/Convalonia/Convalonia.csproj" />
   </Folder>
-  <Folder Name="/libs/">
-    <Project Path="libs/Jinobald.Core/Jinobald.Core.csproj" />
-    <Project Path="libs/Jinobald.Avalonia/Jinobald.Avalonia.csproj" />
-    <Project Path="libs/Jinobald.Wpf/Jinobald.Wpf.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Jinobald.Core.Tests/Jinobald.Core.Tests.csproj" />
-    <Project Path="tests/Jinobald.Avalonia.Tests/Jinobald.Avalonia.Tests.csproj" />
-    <Project Path="tests/Jinobald.Wpf.Tests/Jinobald.Wpf.Tests.csproj" />
-  </Folder>
 </Solution>
